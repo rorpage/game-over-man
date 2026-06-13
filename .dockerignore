@@ -1,8 +1,6 @@
-node_modules
-dist
 .git
 .github
+deploy
 *.md
 config.json
-state.json
-.env
+game-over-man

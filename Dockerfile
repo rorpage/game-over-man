@@ -1,15 +1,16 @@
-FROM node:20-alpine AS builder
+FROM golang:1.22-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY tsconfig.json ./
-COPY src/ ./src/
-RUN npm run build
+COPY go.mod ./
+RUN go mod download
+COPY *.go ./
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o game-over-man .
 
-FROM node:20-alpine
+FROM alpine:3.19
+RUN apk add --no-cache ca-certificates
 WORKDIR /app
-COPY --from=builder /app/dist ./dist
-RUN mkdir -p /data /config && chown -R node:node /data /config /app
-USER node
+COPY --from=builder /app/game-over-man .
+RUN mkdir -p /etc/game-over-man /var/lib/game-over-man
+ENV CONFIG_FILE=/config/config.json \
+    STATE_FILE=/data/state.json
 VOLUME ["/data"]
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["/app/game-over-man"]

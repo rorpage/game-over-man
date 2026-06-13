@@ -1,17 +1,13 @@
 [Unit]
 Description=Game Over Man sports score notifier
 Documentation=https://github.com/rorpage/game-over-man
-Requires=docker.service
-After=docker.service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
+User=game-over-man
 EnvironmentFile=/etc/game-over-man/env
-ExecStart=/usr/bin/docker run --rm \
-  --name game-over-man \
-  -v /etc/game-over-man/config.json:/config/config.json:ro \
-  -v /var/lib/game-over-man:/data \
-  -e NOTIFICATION_URL=${NOTIFICATION_URL} \
-  ghcr.io/rorpage/game-over-man:latest
+ExecStart=/usr/local/bin/game-over-man
 StandardOutput=journal
 StandardError=journal
