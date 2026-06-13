@@ -227,13 +227,17 @@ Logs go to syslog (`journalctl -t game-over-man` or `/var/log/syslog`).
 
 The state file is the single source of truth for idempotency. As long as it persists across runs, no game will ever trigger more than one notification.
 
-## Releasing a New Version
+## Versioning
 
-Create a version tag to trigger the GitHub Actions workflow, which cross-compiles binaries for all platforms and attaches them to a GitHub Release:
+Releases are created automatically on every push to `main`. The version follows CalVer: `YYYY.MM.DD.N` where N is the GitHub Actions run number (e.g. `2026.06.13.4`). No manual tagging required.
+
+The version is embedded in the binary at build time:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+game-over-man --version
+# 2026.06.13.4
 ```
 
-Binaries will be available at `https://github.com/rorpage/game-over-man/releases`.
+When running locally from source, `--version` prints `dev`.
+
+The latest release is always available at `https://github.com/rorpage/game-over-man/releases/latest`.

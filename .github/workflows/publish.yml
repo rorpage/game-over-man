@@ -2,14 +2,15 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
 
 jobs:
   release:
-    name: Build and release binaries
+    name: Build and release
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,16 +20,28 @@ jobs:
         with:
           go-version: "1.22"
 
+      - name: Compute version
+        id: version
+        run: echo "version=$(date -u +%Y.%m.%d).${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
       - name: Build binaries
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir -p dist
-          GOOS=linux   GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/game-over-man-linux-amd64 .
-          GOOS=linux   GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/game-over-man-linux-arm64 .
-          GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/game-over-man-darwin-amd64 .
-          GOOS=darwin  GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/game-over-man-darwin-arm64 .
-          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o dist/game-over-man-windows-amd64.exe .
+          for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64; do
+            GOOS="${target%/*}"
+            GOARCH="${target#*/}"
+            EXT="$( [ "$GOOS" = "windows" ] && echo ".exe" || echo "" )"
+            CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" go build \
+              -ldflags="-s -w -X main.version=${VERSION}" \
+              -o "dist/game-over-man-${GOOS}-${GOARCH}${EXT}" .
+          done
 
-      - name: Create GitHub release with binaries
+      - name: Create release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          make_latest: true
           files: dist/*

@@ -6,10 +6,18 @@ import (
 	"os"
 )
 
+// version is set at build time via -ldflags "-X main.version=..."
+var version = "dev"
+
 func main() {
 	log.SetFlags(0)
 
-	fmt.Println("=== Game Over Man - Sports Score Notifier ===")
+	if len(os.Args) == 2 && os.Args[1] == "--version" {
+		fmt.Println(version)
+		return
+	}
+
+	fmt.Printf("=== Game Over Man %s ===\n", version)
 
 	cfg, err := loadConfig()
 	if err != nil {

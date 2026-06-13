@@ -85,9 +85,13 @@ To test locally without a real webhook, run a listener in another terminal:
 python3 -m http.server 3001
 ```
 
+## Versioning
+
+Releases use CalVer: `YYYY.MM.DD.N` where N is `github.run_number`. The version is embedded at build time via `-ldflags "-X main.version=..."` into the `version` variable in `main.go`. Running from source prints `dev`. No manual tagging; every push to main creates a release.
+
 ## GitHub Actions
 
-`.github/workflows/publish.yml` triggers on `v*` tags. It cross-compiles for linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, and windows/amd64, then uploads all binaries to the GitHub Release using `softprops/action-gh-release`. No Docker image is built or published.
+`.github/workflows/publish.yml` triggers on every push to `main`. It computes the CalVer string, cross-compiles for linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, and windows/amd64 (with the version embedded via ldflags), then creates a GitHub Release tagged with the CalVer string using `softprops/action-gh-release` with `make_latest: true`.
 
 ## Scheduling
 
