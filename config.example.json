@@ -1,0 +1,18 @@
+{
+  "teams": [
+    { "sport": "hockey",     "league": "nhl",                          "abbreviation": "UTA" },
+    { "sport": "hockey",     "league": "ahl",                          "abbreviation": "TUC" },
+    { "sport": "football",   "league": "nfl",                          "abbreviation": "KC"  },
+    { "sport": "basketball", "league": "nba",                          "abbreviation": "GSW" },
+    { "sport": "baseball",   "league": "mlb",                          "abbreviation": "NYY" },
+    { "sport": "soccer",     "league": "usa.1",                        "abbreviation": "PHI" },
+    { "sport": "football",   "league": "college-football",             "abbreviation": "ALA" },
+    { "sport": "basketball", "league": "mens-college-basketball",      "abbreviation": "UNC" }
+  ],
+
+  "notificationUrl": "https://ntfy.sh/my-sports-alerts",
+
+  "stateFilePath": "/data/state.json",
+
+  "pruneAfterDays": 30
+}

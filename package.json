@@ -1,0 +1,19 @@
+{
+  "name": "game-over-man",
+  "version": "1.0.0",
+  "description": "Sports score notifier via ESPN API - sends webhook alerts when tracked teams finish games",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
