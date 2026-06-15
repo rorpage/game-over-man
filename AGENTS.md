@@ -70,7 +70,7 @@ Base URL: `http://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scorebo
 
 This is an unofficial but stable ESPN endpoint. It returns today's games with scores and status. The `status.type.completed` boolean determines whether a game is final. `status.type.description` carries strings like `"Final"`, `"Final/OT"`, `"Final/SO"`. The top-level `season.type` integer indicates the season phase: `2` = regular season, `3` = postseason. This is used to populate `gameResult.IsPostseason` and evaluate `postseasonOnly` config entries.
 
-Known working sport/league pairs: `football/nfl`, `football/college-football`, `basketball/nba`, `basketball/wnba`, `basketball/mens-college-basketball`, `basketball/womens-college-basketball`, `baseball/mlb`, `hockey/nhl`, `hockey/ahl`, `soccer/usa.1`, `soccer/usa.nwsl`, `soccer/eng.1`, `soccer/esp.1`, `soccer/ita.1`, `soccer/ger.1`, `soccer/fra.1`, `soccer/uefa.champions`.
+Known working sport/league pairs: `football/nfl`, `football/college-football`, `basketball/nba`, `basketball/wnba`, `basketball/mens-college-basketball`, `basketball/womens-college-basketball`, `baseball/mlb`, `hockey/nhl`, `hockey/ahl`, `soccer/usa.1`, `soccer/usa.nwsl`, `soccer/eng.1`, `soccer/esp.1`, `soccer/ita.1`, `soccer/ger.1`, `soccer/fra.1`, `soccer/uefa.champions`, `soccer/fifa.world`.
 
 ## Adding a new league
 

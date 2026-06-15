@@ -116,6 +116,7 @@ See `config.example.json` for a more complete example with all supported fields.
 | Soccer | Bundesliga | `soccer` | `ger.1` |
 | Soccer | Ligue 1 | `soccer` | `fra.1` |
 | Soccer | Champions League | `soccer` | `uefa.champions` |
+| Soccer | FIFA World Cup | `soccer` | `fifa.world` |
 
 The ESPN API may support additional leagues. Test any `sport`/`league` pair with:
 
