@@ -35,15 +35,15 @@ type htSiteKit struct {
 }
 
 type htGame struct {
-	GameID           string `json:"game_id"`
-	DatePlayed       string `json:"date_played"`
+	GameID           string `json:"ID"`
+	DatePlayed       string `json:"Date"`
 	GameStatus       string `json:"GameStatus"`
 	GameStatusString string `json:"GameStatusString"`
-	HomeTeam         string `json:"HomeTeam"`
-	HomeTeamName     string `json:"HomeTeamName"`
+	HomeTeam         string `json:"HomeCode"`
+	HomeTeamName     string `json:"HomeLongName"`
 	HomeGoals        string `json:"HomeGoals"`
-	VisitorTeam      string `json:"VisitorTeam"`
-	VisitorTeamName  string `json:"VisitorTeamName"`
+	VisitorTeam      string `json:"VisitorCode"`
+	VisitorTeamName  string `json:"VisitorLongName"`
 	VisitorGoals     string `json:"VisitorGoals"`
 	IsPlayoffGame    string `json:"IsPlayoffGame"`
 }
