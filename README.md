@@ -1,6 +1,6 @@
 # Game Over Man
 
-A sports score notifier for home servers. It polls the ESPN API for final scores across multiple sports and leagues, then fires a single webhook notification per game for each team you care about. No score goes unnoticed; no notification repeats.
+A sports score notifier for home servers. It polls ESPN and HockeyTech APIs for final scores across multiple sports and leagues, then fires a single webhook notification per game for each team you care about. No score goes unnoticed; no notification repeats.
 
 It is a single Go binary with no runtime dependencies. Drop it on any Linux or macOS machine, point it at a config file, and schedule it with cron or systemd.
 

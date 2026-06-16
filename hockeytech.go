@@ -15,8 +15,8 @@ type hockeytechLeague struct {
 }
 
 var hockeytechLeagues = map[string]hockeytechLeague{
-	"pwhl": {"694cfeed58c932ee", "pwhl"},
-	"echl": {"e6219ee34f4b5200", "echl"},
+	"pwhl": {key: "694cfeed58c932ee", clientCode: "pwhl"},
+	"echl": {key: "e6219ee34f4b5200", clientCode: "echl"},
 }
 
 func isHockeytechLeague(league string) bool {
@@ -49,7 +49,10 @@ type htGame struct {
 }
 
 func fetchHockeytechScoreboard(sport, league string) ([]gameResult, error) {
-	ht := hockeytechLeagues[league]
+	ht, ok := hockeytechLeagues[league]
+	if !ok {
+		return nil, fmt.Errorf("unknown hockeytech league: %s", league)
+	}
 	url := fmt.Sprintf(
 		"%s?key=%s&client_code=%s&feed=modulekit&view=scorebar&numberofdaysahead=0&numberofdaysback=1&lang=en&fmt=json",
 		hockeytechBase, ht.key, ht.clientCode,
@@ -67,7 +70,7 @@ func fetchHockeytechScoreboard(sport, league string) ([]gameResult, error) {
 
 	var body htResponse
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return nil, fmt.Errorf("decoding hockeytech response: %w", err)
+		return nil, fmt.Errorf("decoding %s response: %w", url, err)
 	}
 
 	var results []gameResult

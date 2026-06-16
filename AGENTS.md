@@ -4,7 +4,7 @@ Context for AI agents (Claude Code, Copilot, etc.) working in this repository.
 
 ## What this project does
 
-Game Over Man is a one-shot Go binary for home servers. It queries the ESPN public scoreboard API for any sport/league you configure, finds completed games involving tracked teams, and sends a single webhook notification per game. Idempotency is maintained via a JSON state file. It runs directly on Linux or macOS -- no Docker, no runtime dependencies.
+Game Over Man is a one-shot Go binary for home servers. It queries ESPN or HockeyTech (selected automatically by league) for any sport/league you configure, finds completed games involving tracked teams, and sends a single webhook notification per game. Idempotency is maintained via a JSON state file. It runs directly on Linux or macOS -- no Docker, no runtime dependencies.
 
 ## Repository layout
 
@@ -48,7 +48,7 @@ deploy/
 | `teams` | Yes | -- | Array of teams to track |
 | `teams[].sport` | Yes | -- | Sport category (e.g. `hockey`, `football`) |
 | `teams[].league` | Yes | -- | League identifier (e.g. `nhl`, `nfl`) |
-| `teams[].abbreviation` | Yes | -- | Team abbreviation as used by ESPN (e.g. `CHI`, `IND`), or `"*"` to match every team in the league |
+| `teams[].abbreviation` | Yes | -- | Team abbreviation as used by the data provider (e.g. `CHI`, `IND`), or `"*"` to match every team in the league. Use `"*"` first to discover abbreviations from notification payloads if unsure. |
 | `teams[].postseasonOnly` | No | `false` | When `true`, skip games that are not part of the postseason/playoffs |
 | `notificationUrl` | See note | -- | Webhook URL to POST alerts to |
 | `notificationMethod` | No | `POST` | HTTP method for notifications |
