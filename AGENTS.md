@@ -65,6 +65,10 @@ deploy/
 | Config | `/etc/game-over-man/config.json` |
 | State | `/var/lib/game-over-man/state.json` |
 
+## Shared utilities
+
+`parseScore` is defined in `espn.go` and used by `hockeytech.go`. This is intentional -- all files are in the same `main` package and share a flat namespace, so there is no real coupling between files. Do not extract single small helpers into a `util.go` preemptively; only do so if several shared helpers accumulate and a dedicated file becomes clearly worthwhile.
+
 ## Provider selection
 
 The API provider is selected automatically based on league name. `isHockeytechLeague` in `hockeytech.go` checks the `hockeytechLeagues` registry. If the league is not in that registry, ESPN is used. No config field is needed.
