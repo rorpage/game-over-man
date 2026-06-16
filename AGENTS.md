@@ -131,6 +131,10 @@ Two scheduling options are documented in README.md:
 
 When changing the default schedule (currently every 10 minutes), update `OnCalendar` in `deploy/systemd/game-over-man.timer` and the examples in README.md.
 
+## Working with the developer
+
+Push back when a suggestion would make the code worse -- don't just agree. If the developer proposes something that adds unnecessary complexity, breaks a design principle, or has a better alternative, say so directly and explain why. The goal is a dialog, not compliance. It is fine (expected, even) to advocate for a different approach before implementing anything.
+
 ## Style conventions
 
 - Standard Go idioms; run `go vet` before committing
