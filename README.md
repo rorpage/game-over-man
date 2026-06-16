@@ -6,7 +6,7 @@ It is a single Go binary with no runtime dependencies. Drop it on any Linux or m
 
 ## Features
 
-- Tracks teams across NFL, NHL, NBA, MLB, AHL, MLS, college football, college basketball, and more
+- Tracks teams across NFL, NHL, NBA, MLB, AHL, PWHL, ECHL, MLS, college football, college basketball, and more
 - Follow an entire league during the playoffs with a wildcard `"*"` abbreviation and `postseasonOnly: true`
 - One notification per completed game -- no duplicates, even across restarts
 - Built-in Slack and Discord payload presets; custom Go template support for any other platform
@@ -75,7 +75,7 @@ See `config.example.json` for a more complete example with all supported fields.
 | `teams` | Yes | -- | Array of teams to track |
 | `teams[].sport` | Yes | -- | Sport category (e.g. `hockey`, `football`) |
 | `teams[].league` | Yes | -- | League identifier (e.g. `nhl`, `nfl`) |
-| `teams[].abbreviation` | Yes | -- | Team abbreviation as used by ESPN (e.g. `CHI`, `IND`), or `"*"` to match every team in the league |
+| `teams[].abbreviation` | Yes | -- | Team abbreviation as used by the data provider (e.g. `CHI`, `IND`), or `"*"` to match every team in the league. Use `"*"` first to discover abbreviations from notification payloads if unsure. |
 | `teams[].postseasonOnly` | No | `false` | When `true`, skip games that are not part of the postseason/playoffs |
 | `notificationUrl` | See note | -- | Webhook URL to POST alerts to |
 | `notificationMethod` | No | `POST` | HTTP method for notifications |
@@ -97,26 +97,30 @@ See `config.example.json` for a more complete example with all supported fields.
 
 ## Supported Leagues
 
-| Sport | League | `sport` value | `league` value |
-|---|---|---|---|
-| Football | NFL | `football` | `nfl` |
-| Football | College Football | `football` | `college-football` |
-| Basketball | NBA | `basketball` | `nba` |
-| Basketball | WNBA | `basketball` | `wnba` |
-| Basketball | Men's NCAA | `basketball` | `mens-college-basketball` |
-| Basketball | Women's NCAA | `basketball` | `womens-college-basketball` |
-| Baseball | MLB | `baseball` | `mlb` |
-| Hockey | NHL | `hockey` | `nhl` |
-| Hockey | AHL | `hockey` | `ahl` |
-| Soccer | MLS | `soccer` | `usa.1` |
-| Soccer | NWSL | `soccer` | `usa.nwsl` |
-| Soccer | Premier League | `soccer` | `eng.1` |
-| Soccer | La Liga | `soccer` | `esp.1` |
-| Soccer | Serie A | `soccer` | `ita.1` |
-| Soccer | Bundesliga | `soccer` | `ger.1` |
-| Soccer | Ligue 1 | `soccer` | `fra.1` |
-| Soccer | Champions League | `soccer` | `uefa.champions` |
-| Soccer | FIFA World Cup | `soccer` | `fifa.world` |
+| Sport | League | `sport` value | `league` value | API |
+|---|---|---|---|---|
+| Football | NFL | `football` | `nfl` | ESPN |
+| Football | College Football | `football` | `college-football` | ESPN |
+| Basketball | NBA | `basketball` | `nba` | ESPN |
+| Basketball | WNBA | `basketball` | `wnba` | ESPN |
+| Basketball | Men's NCAA | `basketball` | `mens-college-basketball` | ESPN |
+| Basketball | Women's NCAA | `basketball` | `womens-college-basketball` | ESPN |
+| Baseball | MLB | `baseball` | `mlb` | ESPN |
+| Hockey | NHL | `hockey` | `nhl` | ESPN |
+| Hockey | AHL | `hockey` | `ahl` | ESPN |
+| Hockey | PWHL | `hockey` | `pwhl` | HockeyTech |
+| Hockey | ECHL | `hockey` | `echl` | HockeyTech |
+| Soccer | MLS | `soccer` | `usa.1` | ESPN |
+| Soccer | NWSL | `soccer` | `usa.nwsl` | ESPN |
+| Soccer | Premier League | `soccer` | `eng.1` | ESPN |
+| Soccer | La Liga | `soccer` | `esp.1` | ESPN |
+| Soccer | Serie A | `soccer` | `ita.1` | ESPN |
+| Soccer | Bundesliga | `soccer` | `ger.1` | ESPN |
+| Soccer | Ligue 1 | `soccer` | `fra.1` | ESPN |
+| Soccer | Champions League | `soccer` | `uefa.champions` | ESPN |
+| Soccer | FIFA World Cup | `soccer` | `fifa.world` | ESPN |
+
+The correct API is selected automatically based on the `league` value -- no extra config needed.
 
 The ESPN API may support additional leagues. Test any `sport`/`league` pair with:
 
@@ -279,7 +283,7 @@ Logs go to syslog (`journalctl -t game-over-man` or `/var/log/syslog`).
 
 1. Load config from `CONFIG_FILE` (default: `/etc/game-over-man/config.json`)
 2. Load notification state from `STATE_FILE`, pruning entries older than `pruneAfterDays`
-3. For each unique sport/league in the team list, fetch today's scoreboard from the ESPN API
+3. For each unique sport/league in the team list, fetch today's scoreboard from the appropriate API (ESPN or HockeyTech, selected automatically by league)
 4. For each completed game involving a tracked team, check whether a notification was already sent
 5. If not, POST the notification payload to the configured URL and record the game ID in state
 6. Save state to disk

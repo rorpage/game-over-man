@@ -9,11 +9,12 @@ Game Over Man is a one-shot Go binary for home servers. It queries the ESPN publ
 ## Repository layout
 
 ```
-main.go       -- entry point; orchestrates config, ESPN fetch, notify, state
-config.go     -- config types, loading from JSON + env var overrides
-espn.go       -- ESPN API fetch, response parsing, team matching
-notifier.go   -- builds notification payload (webhook/slack/discord/template), POSTs to webhook URL
-state.go      -- reads/writes/prunes the state file
+main.go          -- entry point; orchestrates config, fetch (ESPN or HockeyTech), notify, state
+config.go        -- config types, loading from JSON + env var overrides
+espn.go          -- ESPN API fetch, response parsing, team matching
+hockeytech.go    -- HockeyTech API fetch and response parsing (PWHL, ECHL, and others)
+notifier.go      -- builds notification payload (webhook/slack/discord/template), POSTs to webhook URL
+state.go         -- reads/writes/prunes the state file
 
 go.mod                -- module definition; no external dependencies
 config.example.json   -- copy to config.json (gitignored) to run locally
@@ -64,6 +65,10 @@ deploy/
 | Config | `/etc/game-over-man/config.json` |
 | State | `/var/lib/game-over-man/state.json` |
 
+## Provider selection
+
+The API provider is selected automatically based on league name. `isHockeytechLeague` in `hockeytech.go` checks the `hockeytechLeagues` registry. If the league is not in that registry, ESPN is used. No config field is needed.
+
 ## ESPN API
 
 Base URL: `http://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard`
@@ -72,11 +77,34 @@ This is an unofficial but stable ESPN endpoint. It returns today's games with sc
 
 Known working sport/league pairs: `football/nfl`, `football/college-football`, `basketball/nba`, `basketball/wnba`, `basketball/mens-college-basketball`, `basketball/womens-college-basketball`, `baseball/mlb`, `hockey/nhl`, `hockey/ahl`, `soccer/usa.1`, `soccer/usa.nwsl`, `soccer/eng.1`, `soccer/esp.1`, `soccer/ita.1`, `soccer/ger.1`, `soccer/fra.1`, `soccer/uefa.champions`, `soccer/fifa.world`.
 
-## Adding a new league
+## HockeyTech API
+
+Base URL: `https://lscluster.hockeytech.com/feed/index.php`
+
+Key query parameters: `key`, `client_code`, `feed=modulekit`, `view=scorebar`, `numberofdaysahead=0`, `numberofdaysback=1`, `lang=en`, `fmt=json`.
+
+Response shape: `SiteKit.Scorebar[]` array. `GameStatus` "4" = final, "5" = unofficial final. `IsPlayoffGame` "1" = postseason. Game IDs are prefixed with the league name in the state file (e.g. `pwhl_12345`) to avoid collisions across leagues.
+
+Known leagues (in `hockeytechLeagues` map in `hockeytech.go`):
+
+| League | `league` value | `client_code` | `key` |
+|---|---|---|---|
+| PWHL | `pwhl` | `pwhl` | `694cfeed58c932ee` |
+| ECHL | `echl` | `echl` | `e6219ee34f4b5200` |
+
+To add more HockeyTech leagues, add an entry to `hockeytechLeagues` in `hockeytech.go`. The key and client_code for any HockeyTech-powered league are embedded in that league's official website/app JavaScript.
+
+## Adding a new ESPN league
 
 1. Verify the endpoint: `curl "http://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard"`
 2. Add entries to the `teams` array in config
 3. Update the Supported Leagues table in README.md and the known list above
+
+## Adding a new HockeyTech league
+
+1. Find the `key` and `client_code` from the league's official website JS
+2. Add an entry to `hockeytechLeagues` in `hockeytech.go`
+3. Update the Supported Leagues table in README.md and the HockeyTech known leagues table above
 
 ## Notification payload shape
 
