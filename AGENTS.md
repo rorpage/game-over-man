@@ -94,7 +94,7 @@ Known leagues (in `hockeytechLeagues` map in `hockeytech.go`):
 | League | `league` value | `client_code` | `key` |
 |---|---|---|---|
 | PWHL | `pwhl` | `pwhl` | `694cfeed58c932ee` |
-| ECHL | `echl` | `echl` | `e6219ee34f4b5200` |
+| ECHL | `echl` | `echl` | `2c2b89ea7345cae8` |
 
 To add more HockeyTech leagues, add an entry to `hockeytechLeagues` in `hockeytech.go`. The key and client_code for any HockeyTech-powered league are embedded in that league's official website/app JavaScript.
 

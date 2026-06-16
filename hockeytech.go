@@ -16,7 +16,7 @@ type hockeytechLeague struct {
 
 var hockeytechLeagues = map[string]hockeytechLeague{
 	"pwhl": {key: "694cfeed58c932ee", clientCode: "pwhl"},
-	"echl": {key: "e6219ee34f4b5200", clientCode: "echl"},
+	"echl": {key: "2c2b89ea7345cae8", clientCode: "echl"},
 }
 
 func isHockeytechLeague(league string) bool {
