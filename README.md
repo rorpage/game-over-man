@@ -49,11 +49,11 @@ sudo mv game-over-man /usr/local/bin/
 
 ## Configuration
 
-Create a config file at `/etc/game-over-man/config.json`:
+Create a config file at `~/.config/game-over-man/config.json`:
 
 ```bash
-sudo mkdir -p /etc/game-over-man
-sudo nano /etc/game-over-man/config.json
+mkdir -p ~/.config/game-over-man
+nano ~/.config/game-over-man/config.json
 ```
 
 ```json
@@ -82,7 +82,7 @@ See `config.example.json` for a more complete example with all supported fields.
 | `notificationHeaders` | No | -- | Extra headers (e.g. `{"Authorization": "Bearer ..."}`) |
 | `notificationType` | No | `webhook` | Payload format: `webhook`, `slack`, `discord`, or `template` |
 | `notificationTemplate` | If `template` | -- | Go template string used when `notificationType` is `template` |
-| `stateFilePath` | No | `/var/lib/game-over-man/state.json` | Where to persist notification state |
+| `stateFilePath` | No | `~/.config/game-over-man/state.json` | Where to persist notification state |
 | `pruneAfterDays` | No | `30` | How many days to keep state entries before pruning |
 
 **Notification URL:** Set via the `NOTIFICATION_URL` environment variable (preferred, keeps it out of the config file) or as `notificationUrl` in the config. The env var takes precedence.
@@ -92,8 +92,8 @@ See `config.example.json` for a more complete example with all supported fields.
 | Variable | Description |
 |---|---|
 | `NOTIFICATION_URL` | Webhook URL (overrides `notificationUrl` in config) |
-| `CONFIG_FILE` | Path to config file (default: `/etc/game-over-man/config.json`) |
-| `STATE_FILE` | Path to state file (default: `/var/lib/game-over-man/state.json`) |
+| `CONFIG_FILE` | Path to config file (default: `~/.config/game-over-man/config.json`) |
+| `STATE_FILE` | Path to state file (default: `~/.config/game-over-man/state.json`) |
 
 ## Supported Leagues
 
@@ -144,7 +144,7 @@ Each alert is an HTTP POST with `Content-Type: application/json`:
     "statusDescription": "Final/OT",
     "isPostseason": true
   },
-  "summary": "Final: Chicago Blackhawks 4, Colorado Avalanche 3 (Final/OT)",
+  "summary": "Chicago Blackhawks 4, Colorado Avalanche 3 (NHL Final/OT)",
   "winner": "Chicago Blackhawks",
   "loser": "Colorado Avalanche",
   "isDraw": false
@@ -192,7 +192,7 @@ Set `notificationType` to `"template"` and provide a `notificationTemplate` stri
 
 | Variable | Description |
 |---|---|
-| `{{.Summary}}` | Pre-built summary string (e.g. `Final: Utah HC 4, Colorado 3 (OT)`) |
+| `{{.Summary}}` | Pre-built summary string (e.g. `Utah HC 4, Colorado 3 (NHL Final/OT)`) |
 | `{{.Winner}}` | Winner's name, or empty if a draw |
 | `{{.Loser}}` | Loser's name, or empty if a draw |
 | `{{.IsDraw}}` | `true` if the game ended in a draw |
@@ -227,7 +227,7 @@ systemd timers have proper log capture via `journalctl`, survive reboots cleanly
 sudo bash deploy/systemd/install.sh
 ```
 
-The script downloads the latest binary from GitHub Releases (or builds from source if Go is available), creates a `game-over-man` system user, sets up `/etc/game-over-man/` and `/var/lib/game-over-man/`, and enables the timer. Then:
+The script downloads the latest binary from GitHub Releases (or builds from source if Go is available), creates a `game-over-man` system user, sets up `/etc/game-over-man/` and `/var/lib/game-over-man/`, and enables the timer. The env file pre-configures `CONFIG_FILE` and `STATE_FILE` to those system paths. Then:
 
 ```bash
 # Set your notification URL
@@ -274,14 +274,14 @@ Add a line to your crontab with `crontab -e`:
 Or if you prefer an env file:
 
 ```cron
-*/10 * * * * env $(cat /etc/game-over-man/env | xargs) /usr/local/bin/game-over-man
+*/10 * * * * env $(cat ~/.config/game-over-man/env | xargs) /usr/local/bin/game-over-man
 ```
 
 Logs go to syslog (`journalctl -t game-over-man` or `/var/log/syslog`).
 
 ## How It Works
 
-1. Load config from `CONFIG_FILE` (default: `/etc/game-over-man/config.json`)
+1. Load config from `CONFIG_FILE` (default: `~/.config/game-over-man/config.json`)
 2. Load notification state from `STATE_FILE`, pruning entries older than `pruneAfterDays`
 3. For each unique sport/league in the team list, fetch today's scoreboard from the appropriate API (ESPN or HockeyTech, selected automatically by league)
 4. For each completed game involving a tracked team, check whether a notification was already sent
