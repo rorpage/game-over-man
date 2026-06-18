@@ -4,14 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
-const (
-	defaultConfigFile = "/etc/game-over-man/config.json"
-	defaultStateFile  = "/var/lib/game-over-man/state.json"
-	defaultPruneDays  = 30
-)
+const defaultPruneDays = 30
+
+func userAppDir() string {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		dir = filepath.Join(os.Getenv("HOME"), ".config")
+	}
+	return filepath.Join(dir, "game-over-man")
+}
 
 type teamConfig struct {
 	Sport          string `json:"sport"`
@@ -34,7 +39,7 @@ type appConfig struct {
 func loadConfig() (*appConfig, error) {
 	path := os.Getenv("CONFIG_FILE")
 	if path == "" {
-		path = defaultConfigFile
+		path = filepath.Join(userAppDir(), "config.json")
 	}
 
 	data, err := os.ReadFile(path)
@@ -58,7 +63,7 @@ func loadConfig() (*appConfig, error) {
 		cfg.StateFilePath = sf
 	}
 	if cfg.StateFilePath == "" {
-		cfg.StateFilePath = defaultStateFile
+		cfg.StateFilePath = filepath.Join(userAppDir(), "state.json")
 	}
 
 	if cfg.PruneAfterDays <= 0 {

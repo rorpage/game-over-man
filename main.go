@@ -38,13 +38,25 @@ func main() {
 		}
 		seen[key] = true
 
-		log.Printf("[espn] fetching %s...", key)
-		games, err := fetchScoreboard(t.Sport, t.League)
-		if err != nil {
-			log.Printf("[espn] %v", err)
-			continue
+		var games []gameResult
+		var err error
+		if isHockeytechLeague(t.League) {
+			log.Printf("[hockeytech] fetching %s...", t.League)
+			games, err = fetchHockeytechScoreboard(t.Sport, t.League)
+			if err != nil {
+				log.Printf("[hockeytech] %v", err)
+				continue
+			}
+			log.Printf("[hockeytech] %d completed game(s)", len(games))
+		} else {
+			log.Printf("[espn] fetching %s...", key)
+			games, err = fetchScoreboard(t.Sport, t.League)
+			if err != nil {
+				log.Printf("[espn] %v", err)
+				continue
+			}
+			log.Printf("[espn] %d completed game(s)", len(games))
 		}
-		log.Printf("[espn] %d completed game(s)", len(games))
 
 		for _, game := range games {
 			if !isTrackedGame(game, cfg.Teams) {

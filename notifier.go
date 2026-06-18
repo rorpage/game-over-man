@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"text/template"
 )
 
@@ -24,8 +25,8 @@ func buildPayload(game gameResult) notificationPayload {
 	var summary string
 
 	if isDraw {
-		summary = fmt.Sprintf("Final: %s %d, %s %d -- Draw (%s)",
-			away.Name, away.Score, home.Name, home.Score, game.StatusDescription)
+		summary = fmt.Sprintf("%s %d, %s %d -- Draw (%s %s)",
+			away.Name, away.Score, home.Name, home.Score, strings.ToUpper(game.League), game.StatusDescription)
 	} else {
 		w, l := home, away
 		if away.Score > home.Score {
@@ -34,8 +35,8 @@ func buildPayload(game gameResult) notificationPayload {
 		wn, ln := w.Name, l.Name
 		winner = &wn
 		loser = &ln
-		summary = fmt.Sprintf("Final: %s %d, %s %d (%s)",
-			w.Name, w.Score, l.Name, l.Score, game.StatusDescription)
+		summary = fmt.Sprintf("%s %d, %s %d (%s %s)",
+			w.Name, w.Score, l.Name, l.Score, strings.ToUpper(game.League), game.StatusDescription)
 	}
 
 	return notificationPayload{Game: game, Summary: summary, Winner: winner, Loser: loser, IsDraw: isDraw}
