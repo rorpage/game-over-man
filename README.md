@@ -224,7 +224,11 @@ systemd timers have proper log capture via `journalctl`, survive reboots cleanly
 **Quick install:**
 
 ```bash
+# From a cloned repo
 sudo bash deploy/systemd/install.sh
+
+# Or run directly from GitHub (no clone needed)
+curl -fsSL https://raw.githubusercontent.com/rorpage/game-over-man/main/deploy/systemd/install.sh | sudo bash
 ```
 
 The script downloads the latest binary from GitHub Releases (or builds from source if Go is available), creates a `game-over-man` system user, sets up `/etc/game-over-man/` and `/var/lib/game-over-man/`, and enables the timer. The env file pre-configures `CONFIG_FILE` and `STATE_FILE` to those system paths. Then:

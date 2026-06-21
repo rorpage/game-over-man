@@ -82,6 +82,7 @@ fi
 
 # Create directories with appropriate ownership
 mkdir -p "$CONFIG_DIR" "$DATA_DIR"
+chown "root:$SERVICE_USER" "$CONFIG_DIR"
 chown "$SERVICE_USER:$SERVICE_USER" "$DATA_DIR"
 chmod 750 "$DATA_DIR" "$CONFIG_DIR"
 
