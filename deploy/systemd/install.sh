@@ -11,7 +11,11 @@ DATA_DIR=/var/lib/game-over-man
 UNIT_DIR=/etc/systemd/system
 REPO=rorpage/game-over-man
 SERVICE_USER=game-over-man
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# When piped from curl, BASH_SOURCE[0] is unset; fall back to empty string.
+SCRIPT_DIR=""
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root: sudo $0"
@@ -62,8 +66,11 @@ if [ "$BINARY_INSTALLED" = false ]; then
   fi
 
   echo "Building from source with Go..."
-  REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-  if [ -f "$REPO_ROOT/go.mod" ]; then
+  REPO_ROOT=""
+  if [[ -n "$SCRIPT_DIR" ]]; then
+    REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+  fi
+  if [[ -n "$REPO_ROOT" && -f "$REPO_ROOT/go.mod" ]]; then
     (cd "$REPO_ROOT" && CGO_ENABLED=0 go build -ldflags="-s -w" -o "$INSTALL_DIR/game-over-man" .)
   else
     BUILD_DIR=$(mktemp -d)
@@ -86,13 +93,28 @@ chown "root:$SERVICE_USER" "$CONFIG_DIR"
 chown "$SERVICE_USER:$SERVICE_USER" "$DATA_DIR"
 chmod 750 "$DATA_DIR" "$CONFIG_DIR"
 
-# Install unit files
-install -m 644 "$SCRIPT_DIR/game-over-man.service" "$UNIT_DIR/"
-install -m 644 "$SCRIPT_DIR/game-over-man.timer"   "$UNIT_DIR/"
+RAW_BASE="https://raw.githubusercontent.com/$REPO/main/deploy/systemd"
+
+# Install unit files (from local clone or downloaded from GitHub)
+for UNIT_FILE in game-over-man.service game-over-man.timer; do
+  if [[ -n "$SCRIPT_DIR" && -f "$SCRIPT_DIR/$UNIT_FILE" ]]; then
+    install -m 644 "$SCRIPT_DIR/$UNIT_FILE" "$UNIT_DIR/"
+  else
+    echo "Downloading $UNIT_FILE from GitHub..."
+    curl -fsSL "$RAW_BASE/$UNIT_FILE" -o "$UNIT_DIR/$UNIT_FILE"
+    chmod 644 "$UNIT_DIR/$UNIT_FILE"
+  fi
+done
 
 # Set up env file from example if not present
 if [ ! -f "$CONFIG_DIR/env" ]; then
-  install -m 640 "$SCRIPT_DIR/env.example" "$CONFIG_DIR/env"
+  if [[ -n "$SCRIPT_DIR" && -f "$SCRIPT_DIR/env.example" ]]; then
+    install -m 640 "$SCRIPT_DIR/env.example" "$CONFIG_DIR/env"
+  else
+    echo "Downloading env.example from GitHub..."
+    curl -fsSL "$RAW_BASE/env.example" -o "$CONFIG_DIR/env"
+    chmod 640 "$CONFIG_DIR/env"
+  fi
   chown "root:$SERVICE_USER" "$CONFIG_DIR/env"
   echo ""
   echo "  -> Edit $CONFIG_DIR/env with your NOTIFICATION_URL."
