@@ -15,6 +15,7 @@ type competitor struct {
 	Abbreviation string `json:"abbreviation"`
 	Score        int    `json:"score"`
 	IsHome       bool   `json:"isHome"`
+	LogoURL      string `json:"logoUrl,omitempty"`
 }
 
 type gameResult struct {
@@ -122,6 +123,11 @@ func parseEvent(event espnEvent, sport, league string, isPostseason bool) (gameR
 		return gameResult{}, false
 	}
 
+	logoURL := func(abbrev string) string {
+		return fmt.Sprintf("https://a.espncdn.com/i/teamlogos/%s/500/%s.png",
+			strings.ToLower(league), strings.ToLower(abbrev))
+	}
+
 	return gameResult{
 		ID:     event.ID,
 		Sport:  sport,
@@ -132,12 +138,14 @@ func parseEvent(event espnEvent, sport, league string, isPostseason bool) (gameR
 			Abbreviation: strings.ToUpper(home.Team.Abbreviation),
 			Score:        parseScore(home.Score),
 			IsHome:       true,
+			LogoURL:      logoURL(home.Team.Abbreviation),
 		},
 		AwayTeam: competitor{
 			Name:         away.Team.DisplayName,
 			Abbreviation: strings.ToUpper(away.Team.Abbreviation),
 			Score:        parseScore(away.Score),
 			IsHome:       false,
+			LogoURL:      logoURL(away.Team.Abbreviation),
 		},
 		StatusDescription: event.Status.Type.Description,
 		IsPostseason:      isPostseason,
