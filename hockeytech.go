@@ -42,9 +42,11 @@ type htGame struct {
 	HomeTeam         string `json:"HomeCode"`
 	HomeTeamName     string `json:"HomeLongName"`
 	HomeGoals        string `json:"HomeGoals"`
+	HomeLogo         string `json:"HomeLogo"`
 	VisitorTeam      string `json:"VisitorCode"`
 	VisitorTeamName  string `json:"VisitorLongName"`
 	VisitorGoals     string `json:"VisitorGoals"`
+	VisitorLogo      string `json:"VisitorLogo"`
 	IsPlayoffGame    string `json:"IsPlayoffGame"`
 }
 
@@ -89,12 +91,14 @@ func fetchHockeytechScoreboard(sport, league string) ([]gameResult, error) {
 				Abbreviation: strings.ToUpper(g.HomeTeam),
 				Score:        parseScore(g.HomeGoals),
 				IsHome:       true,
+				LogoURL:      g.HomeLogo,
 			},
 			AwayTeam: competitor{
 				Name:         g.VisitorTeamName,
 				Abbreviation: strings.ToUpper(g.VisitorTeam),
 				Score:        parseScore(g.VisitorGoals),
 				IsHome:       false,
+				LogoURL:      g.VisitorLogo,
 			},
 			StatusDescription: g.GameStatusString,
 			IsPostseason:      g.IsPlayoffGame == "1",

@@ -139,8 +139,8 @@ Each alert is an HTTP POST with `Content-Type: application/json`:
     "sport": "hockey",
     "league": "nhl",
     "date": "2026-05-20T02:00:00Z",
-    "homeTeam": { "name": "Chicago Blackhawks", "abbreviation": "CHI", "score": 4, "isHome": true },
-    "awayTeam": { "name": "Colorado Avalanche", "abbreviation": "COL", "score": 3, "isHome": false },
+    "homeTeam": { "name": "Chicago Blackhawks", "abbreviation": "CHI", "score": 4, "isHome": true, "logoUrl": "https://a.espncdn.com/i/teamlogos/nhl/500/chi.png" },
+    "awayTeam": { "name": "Colorado Avalanche", "abbreviation": "COL", "score": 3, "isHome": false, "logoUrl": "https://a.espncdn.com/i/teamlogos/nhl/500/col.png" },
     "statusDescription": "Final/OT",
     "isPostseason": true
   },
@@ -164,7 +164,7 @@ The `notificationType` field controls the outgoing payload shape:
 | Type | Payload sent |
 |---|---|
 | `webhook` (default) | Full JSON object (see [Notification Payload](#notification-payload)) |
-| `slack` | `{"text": "<summary>"}` — ready for a Slack incoming webhook URL |
+| `slack` | Slack [Block Kit](https://api.slack.com/block-kit) message with team logos, scores, and a result banner |
 | `discord` | `{"content": "<summary>"}` — ready for a Discord webhook URL |
 | `template` | Output of your Go template, rendered against the payload data |
 
@@ -176,6 +176,8 @@ The `notificationType` field controls the outgoing payload shape:
   "notificationType": "slack"
 }
 ```
+
+The Slack payload uses Block Kit for a rich scoreboard layout: a header with a sport emoji (🏒🏈⚾🏀⚽) and league name, one section per team showing the score, abbreviation, team name, and logo image, and a context block announcing the winner or draw. A plain-text `text` field is always included as a fallback for clients that don't render blocks.
 
 **Discord:**
 
@@ -199,6 +201,7 @@ Set `notificationType` to `"template"` and provide a `notificationTemplate` stri
 | `{{.Game.HomeTeam.Name}}` / `{{.Game.AwayTeam.Name}}` | Team names |
 | `{{.Game.HomeTeam.Score}}` / `{{.Game.AwayTeam.Score}}` | Final scores |
 | `{{.Game.HomeTeam.Abbreviation}}` | Team abbreviation |
+| `{{.Game.HomeTeam.LogoURL}}` / `{{.Game.AwayTeam.LogoURL}}` | Team logo image URL (ESPN CDN for ESPN leagues; HockeyTech CDN for PWHL/ECHL; empty string if unavailable) |
 | `{{.Game.Sport}}` / `{{.Game.League}}` | Sport and league |
 | `{{.Game.StatusDescription}}` | Status string (e.g. `Final`, `Final/OT`) |
 | `{{.Game.IsPostseason}}` | `true` if the game is part of the postseason/playoffs |

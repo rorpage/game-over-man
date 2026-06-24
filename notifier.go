@@ -42,10 +42,108 @@ func buildPayload(game gameResult) notificationPayload {
 	return notificationPayload{Game: game, Summary: summary, Winner: winner, Loser: loser, IsDraw: isDraw}
 }
 
+func sportEmoji(sport, league string) string {
+	switch strings.ToLower(league) {
+	case "nhl", "pwhl", "echl", "nwhl":
+		return "🏒"
+	case "nfl":
+		return "🏈"
+	case "mlb":
+		return "⚾"
+	case "nba", "nba_g_league", "wnba":
+		return "🏀"
+	case "mls":
+		return "⚽"
+	}
+	switch strings.ToLower(sport) {
+	case "hockey":
+		return "🏒"
+	case "football":
+		return "🏈"
+	case "baseball":
+		return "⚾"
+	case "basketball":
+		return "🏀"
+	case "soccer":
+		return "⚽"
+	}
+	return "🏅"
+}
+
+func buildSlackBlocks(payload notificationPayload) ([]byte, error) {
+	game := payload.Game
+	emoji := sportEmoji(game.Sport, game.League)
+
+	header := fmt.Sprintf("%s  %s", emoji, strings.ToUpper(game.League))
+	if game.IsPostseason {
+		header += " · Playoffs"
+	}
+	header += " · " + game.StatusDescription
+
+	awayLabel := fmt.Sprintf("*%d*  *%s*  %s  _(Away)_",
+		game.AwayTeam.Score, game.AwayTeam.Abbreviation, game.AwayTeam.Name)
+	homeLabel := fmt.Sprintf("*%d*  *%s*  %s  _(Home)_",
+		game.HomeTeam.Score, game.HomeTeam.Abbreviation, game.HomeTeam.Name)
+
+	if !payload.IsDraw && payload.Winner != nil {
+		if *payload.Winner == game.AwayTeam.Name {
+			awayLabel += "  🏆"
+		} else {
+			homeLabel += "  🏆"
+		}
+	}
+
+	teamBlock := func(label, logoURL, altText string) map[string]any {
+		block := map[string]any{
+			"type": "section",
+			"text": map[string]any{"type": "mrkdwn", "text": label},
+		}
+		if logoURL != "" {
+			block["accessory"] = map[string]any{
+				"type":      "image",
+				"image_url": logoURL,
+				"alt_text":  altText,
+			}
+		}
+		return block
+	}
+
+	blocks := []any{
+		map[string]any{
+			"type": "header",
+			"text": map[string]any{"type": "plain_text", "text": header, "emoji": true},
+		},
+		teamBlock(awayLabel, game.AwayTeam.LogoURL, game.AwayTeam.Name),
+		teamBlock(homeLabel, game.HomeTeam.LogoURL, game.HomeTeam.Name),
+		map[string]any{"type": "divider"},
+	}
+
+	var resultText string
+	switch {
+	case payload.IsDraw:
+		resultText = fmt.Sprintf("🤝 It's a draw!  %s %d – %d  %s",
+			game.AwayTeam.Abbreviation, game.AwayTeam.Score,
+			game.HomeTeam.Score, game.HomeTeam.Abbreviation)
+	case payload.Winner != nil:
+		resultText = fmt.Sprintf("🏆 *%s* win!", *payload.Winner)
+	}
+
+	if resultText != "" {
+		blocks = append(blocks, map[string]any{
+			"type": "context",
+			"elements": []any{
+				map[string]any{"type": "mrkdwn", "text": resultText},
+			},
+		})
+	}
+
+	return json.Marshal(map[string]any{"text": payload.Summary, "blocks": blocks})
+}
+
 func buildBody(cfg *appConfig, payload notificationPayload) ([]byte, error) {
 	switch cfg.NotificationType {
 	case "slack":
-		return json.Marshal(map[string]string{"text": payload.Summary})
+		return buildSlackBlocks(payload)
 	case "discord":
 		return json.Marshal(map[string]string{"content": payload.Summary})
 	case "template":
