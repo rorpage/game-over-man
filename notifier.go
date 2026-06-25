@@ -80,17 +80,15 @@ func buildSlackBlocks(payload notificationPayload) ([]byte, error) {
 	}
 	header += " · " + game.StatusDescription
 
-	awayLabel := fmt.Sprintf("*%d*  *%s*  %s  _(Away)_",
-		game.AwayTeam.Score, game.AwayTeam.Abbreviation, game.AwayTeam.Name)
-	homeLabel := fmt.Sprintf("*%d*  *%s*  %s  _(Home)_",
-		game.HomeTeam.Score, game.HomeTeam.Abbreviation, game.HomeTeam.Name)
+	awayWon := !payload.IsDraw && payload.Winner != nil && *payload.Winner == game.AwayTeam.Name
+	homeWon := !payload.IsDraw && payload.Winner != nil && *payload.Winner == game.HomeTeam.Name
 
-	if !payload.IsDraw && payload.Winner != nil {
-		if *payload.Winner == game.AwayTeam.Name {
-			awayLabel += "  🏆"
-		} else {
-			homeLabel += "  🏆"
+	teamLabel := func(score int, abbrev, name, side string, winner bool) string {
+		label := fmt.Sprintf("%d  %s  %s  (%s)", score, abbrev, name, side)
+		if winner {
+			label = "*" + label + "*"
 		}
+		return label
 	}
 
 	teamBlock := func(label, logoURL, altText string) map[string]any {
@@ -113,28 +111,14 @@ func buildSlackBlocks(payload notificationPayload) ([]byte, error) {
 			"type": "header",
 			"text": map[string]any{"type": "plain_text", "text": header, "emoji": true},
 		},
-		teamBlock(awayLabel, game.AwayTeam.LogoURL, game.AwayTeam.Name),
-		teamBlock(homeLabel, game.HomeTeam.LogoURL, game.HomeTeam.Name),
-		map[string]any{"type": "divider"},
-	}
-
-	var resultText string
-	switch {
-	case payload.IsDraw:
-		resultText = fmt.Sprintf("🤝 It's a draw!  %s %d – %d  %s",
-			game.AwayTeam.Abbreviation, game.AwayTeam.Score,
-			game.HomeTeam.Score, game.HomeTeam.Abbreviation)
-	case payload.Winner != nil:
-		resultText = fmt.Sprintf("🏆 *%s* win!", *payload.Winner)
-	}
-
-	if resultText != "" {
-		blocks = append(blocks, map[string]any{
-			"type": "context",
-			"elements": []any{
-				map[string]any{"type": "mrkdwn", "text": resultText},
-			},
-		})
+		teamBlock(
+			teamLabel(game.AwayTeam.Score, game.AwayTeam.Abbreviation, game.AwayTeam.Name, "Away", awayWon),
+			game.AwayTeam.LogoURL, game.AwayTeam.Name,
+		),
+		teamBlock(
+			teamLabel(game.HomeTeam.Score, game.HomeTeam.Abbreviation, game.HomeTeam.Name, "Home", homeWon),
+			game.HomeTeam.LogoURL, game.HomeTeam.Name,
+		),
 	}
 
 	return json.Marshal(map[string]any{"text": payload.Summary, "blocks": blocks})
