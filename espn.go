@@ -124,7 +124,8 @@ func parseEvent(event espnEvent, sport, league string, isPostseason bool) (gameR
 	}
 
 	logoURL := func(abbrev string) string {
-		return fmt.Sprintf("https://a.espncdn.com/i/teamlogos/%s/500/%s.png",
+		return fmt.Sprintf(
+			"https://a.espncdn.com/combiner/i?img=/i/teamlogos/%s/500/%s.png&background=0xFFFFFF&w=75&h=75",
 			strings.ToLower(league), strings.ToLower(abbrev))
 	}
 

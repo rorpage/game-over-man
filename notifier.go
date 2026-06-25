@@ -92,18 +92,15 @@ func buildSlackBlocks(payload notificationPayload) ([]byte, error) {
 	}
 
 	teamBlock := func(label, logoURL, altText string) map[string]any {
-		block := map[string]any{
-			"type": "section",
-			"text": map[string]any{"type": "mrkdwn", "text": label},
-		}
+		elements := []any{map[string]any{"type": "mrkdwn", "text": label}}
 		if logoURL != "" {
-			block["accessory"] = map[string]any{
+			elements = append([]any{map[string]any{
 				"type":      "image",
 				"image_url": logoURL,
 				"alt_text":  altText,
-			}
+			}}, elements...)
 		}
-		return block
+		return map[string]any{"type": "context", "elements": elements}
 	}
 
 	blocks := []any{
