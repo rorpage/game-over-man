@@ -69,6 +69,7 @@ type espnCompetitor struct {
 type espnTeam struct {
 	Abbreviation string `json:"abbreviation"`
 	DisplayName  string `json:"displayName"`
+	Logo         string `json:"logo"`
 }
 
 func fetchScoreboard(sport, league string) ([]gameResult, error) {
@@ -123,10 +124,15 @@ func parseEvent(event espnEvent, sport, league string, isPostseason bool) (gameR
 		return gameResult{}, false
 	}
 
-	logoURL := func(abbrev string) string {
-		return fmt.Sprintf(
-			"https://a.espncdn.com/combiner/i?img=/i/teamlogos/%s/500/%s.png&background=0xFFFFFF&w=75&h=75",
-			strings.ToLower(league), strings.ToLower(abbrev))
+	// Wrap an ESPN-provided logo URL through the combiner to add a white
+	// background (helps logos with transparency show up in dark mode).
+	// Returns empty string when ESPN doesn't provide a logo (e.g. FIFA).
+	withBackground := func(espnLogoURL string) string {
+		if espnLogoURL == "" {
+			return ""
+		}
+		path := strings.TrimPrefix(espnLogoURL, "https://a.espncdn.com")
+		return fmt.Sprintf("https://a.espncdn.com/combiner/i?img=%s&background=0xFFFFFF&w=75&h=75", path)
 	}
 
 	return gameResult{
@@ -139,14 +145,14 @@ func parseEvent(event espnEvent, sport, league string, isPostseason bool) (gameR
 			Abbreviation: strings.ToUpper(home.Team.Abbreviation),
 			Score:        parseScore(home.Score),
 			IsHome:       true,
-			LogoURL:      logoURL(home.Team.Abbreviation),
+			LogoURL:      withBackground(home.Team.Logo),
 		},
 		AwayTeam: competitor{
 			Name:         away.Team.DisplayName,
 			Abbreviation: strings.ToUpper(away.Team.Abbreviation),
 			Score:        parseScore(away.Score),
 			IsHome:       false,
-			LogoURL:      logoURL(away.Team.Abbreviation),
+			LogoURL:      withBackground(away.Team.Logo),
 		},
 		StatusDescription: event.Status.Type.Description,
 		IsPostseason:      isPostseason,
