@@ -24,7 +24,20 @@ func buildPayload(game gameResult) notificationPayload {
 	var winner, loser *string
 	var summary string
 
-	if isDraw {
+	if isDraw && (home.IsWinner || away.IsWinner) {
+		// Scores are tied but ESPN reports a winner (e.g. penalty shootout or shootout).
+		// Don't report this as a draw — surface the actual winner.
+		isDraw = false
+		w, l := home, away
+		if away.IsWinner {
+			w, l = away, home
+		}
+		wn, ln := w.Name, l.Name
+		winner = &wn
+		loser = &ln
+		summary = fmt.Sprintf("%s wins (%d-%d) (%s %s)",
+			w.Name, w.Score, l.Score, strings.ToUpper(game.League), game.StatusDescription)
+	} else if isDraw {
 		summary = fmt.Sprintf("%s %d, %s %d -- Draw (%s %s)",
 			away.Name, away.Score, home.Name, home.Score, strings.ToUpper(game.League), game.StatusDescription)
 	} else {

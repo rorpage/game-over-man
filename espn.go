@@ -16,6 +16,7 @@ type competitor struct {
 	Score        int    `json:"score"`
 	IsHome       bool   `json:"isHome"`
 	LogoURL      string `json:"logoUrl,omitempty"`
+	IsWinner     bool   `json:"isWinner,omitempty"`
 }
 
 type gameResult struct {
@@ -64,6 +65,7 @@ type espnCompetitor struct {
 	HomeAway string   `json:"homeAway"`
 	Team     espnTeam `json:"team"`
 	Score    string   `json:"score"`
+	Winner   bool     `json:"winner"`
 }
 
 type espnTeam struct {
@@ -146,6 +148,7 @@ func parseEvent(event espnEvent, sport, league string, isPostseason bool) (gameR
 			Score:        parseScore(home.Score),
 			IsHome:       true,
 			LogoURL:      withBackground(home.Team.Logo),
+			IsWinner:     home.Winner,
 		},
 		AwayTeam: competitor{
 			Name:         away.Team.DisplayName,
@@ -153,6 +156,7 @@ func parseEvent(event espnEvent, sport, league string, isPostseason bool) (gameR
 			Score:        parseScore(away.Score),
 			IsHome:       false,
 			LogoURL:      withBackground(away.Team.Logo),
+			IsWinner:     away.Winner,
 		},
 		StatusDescription: event.Status.Type.Description,
 		IsPostseason:      isPostseason,
