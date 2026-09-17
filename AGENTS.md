@@ -105,6 +105,8 @@ To add more HockeyTech leagues, add an entry to `hockeytechLeagues` in `hockeyte
 
 There is no JSON API. `fetchSpringboksResults` in `springboks.go` GETs `https://springboks.rugby/match-centre/results` (an HTML page) and extracts a schema.org `ItemList` of `SportsEvent` embedded as JSON-LD in a `<script type="application/ld+json">` tag, via `ldJSONPattern` (a regexp, not an HTML parser -- there's no other embedded structure to worry about on this page).
 
+The page header embeds multiple JSON-LD blocks (breadcrumb navigation is also typically an `ItemList`, plus an `Organization` block), so `extractResultsList` cannot just take the first block that parses with a non-empty `itemListElement` -- a breadcrumb list would match that and silently produce zero results. It checks each item's `@type` and only accepts a block whose entries are `SportsEvent`.
+
 Consequences of scraping rather than calling a dedicated API:
 
 - No status field and no unique game ID exist in the data. A game is considered completed when both `homeTeamScore` and `awayTeamScore` are present; unplayed fixtures appear in the same list without them. `StatusDescription` is hardcoded to `"Full Time"` for every result.

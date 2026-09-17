@@ -34,6 +34,7 @@ type sbScore struct {
 }
 
 type sbEvent struct {
+	Type          string   `json:"@type"`
 	StartDate     string   `json:"startDate"`
 	Competitor    []sbTeam `json:"competitor"`
 	HomeTeamScore *sbScore `json:"homeTeamScore"`
@@ -103,17 +104,30 @@ func fetchSpringboksResults(sport, league string) ([]gameResult, error) {
 	return results, nil
 }
 
+// The page embeds more than one JSON-LD block (e.g. breadcrumb navigation
+// is also typically an ItemList of ListItems), so a non-empty
+// itemListElement isn't enough to identify the right one. Only accept a
+// candidate that actually contains SportsEvent items.
 func extractResultsList(page []byte) (sbItemList, bool) {
 	for _, match := range ldJSONPattern.FindAllSubmatch(page, -1) {
 		var candidate sbItemList
 		if err := json.Unmarshal(match[1], &candidate); err != nil {
 			continue
 		}
-		if len(candidate.ItemListElement) > 0 {
+		if hasSportsEvents(candidate) {
 			return candidate, true
 		}
 	}
 	return sbItemList{}, false
+}
+
+func hasSportsEvents(list sbItemList) bool {
+	for _, li := range list.ItemListElement {
+		if li.Item.Type == "SportsEvent" {
+			return true
+		}
+	}
+	return false
 }
 
 // Games have no provider-issued ID, so one is derived from the kickoff time
