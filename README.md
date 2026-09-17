@@ -6,7 +6,7 @@ It is a single Go binary with no runtime dependencies. Drop it on any Linux or m
 
 ## Features
 
-- Tracks teams across NFL, NHL, NBA, MLB, AHL, PWHL, ECHL, MLS, college football, college basketball, and more
+- Tracks teams across NFL, NHL, NBA, MLB, AHL, PWHL, ECHL, MLS, college football, college basketball, the Springboks/SA Rugby, and more
 - Follow an entire league during the playoffs with a wildcard `"*"` abbreviation and `postseasonOnly: true`
 - One notification per completed game -- no duplicates, even across restarts
 - Built-in Slack and Discord payload presets; custom Go template support for any other platform
@@ -75,8 +75,8 @@ See `config.example.json` for a more complete example with all supported fields.
 | `teams` | Yes | -- | Array of teams to track |
 | `teams[].sport` | Yes | -- | Sport category (e.g. `hockey`, `football`) |
 | `teams[].league` | Yes | -- | League identifier (e.g. `nhl`, `nfl`) |
-| `teams[].abbreviation` | Yes | -- | Team abbreviation as used by the data provider (e.g. `CHI`, `IND`), or `"*"` to match every team in the league. Use `"*"` first to discover abbreviations from notification payloads if unsure. |
-| `teams[].postseasonOnly` | No | `false` | When `true`, skip games that are not part of the postseason/playoffs |
+| `teams[].abbreviation` | Yes | -- | Team abbreviation as used by the data provider (e.g. `CHI`, `IND`), or `"*"` to match every team in the league. Use `"*"` first to discover abbreviations from notification payloads if unsure. For the `springboks` league (no abbreviations available), use the exact team name as it appears on springboks.rugby instead (e.g. `Springboks`, `DHL Stormers`) -- matching is case-insensitive. |
+| `teams[].postseasonOnly` | No | `false` | When `true`, skip games that are not part of the postseason/playoffs. Not supported for the `springboks` league -- its results feed has no postseason indicator, so `postseasonOnly` entries never match. |
 | `notificationUrl` | See note | -- | Webhook URL to POST alerts to |
 | `notificationMethod` | No | `POST` | HTTP method for notifications |
 | `notificationHeaders` | No | -- | Extra headers (e.g. `{"Authorization": "Bearer ..."}`) |
@@ -119,8 +119,11 @@ See `config.example.json` for a more complete example with all supported fields.
 | Soccer | Ligue 1 | `soccer` | `fra.1` | ESPN |
 | Soccer | Champions League | `soccer` | `uefa.champions` | ESPN |
 | Soccer | FIFA World Cup | `soccer` | `fifa.world` | ESPN |
+| Rugby | Springboks / SA Rugby | `rugby` | `springboks` | springboks.rugby |
 
 The correct API is selected automatically based on the `league` value -- no extra config needed.
+
+The `springboks` league is a special case: springboks.rugby has no JSON API, so results are scraped from a schema.org JSON-LD block embedded in the results page HTML. It covers all SA Rugby-affiliated fixtures (Springboks, franchises, provincial and age-group sides, women's teams), not just test matches, so use a specific team name rather than `"*"` unless you want every one of those notified.
 
 The ESPN API may support additional leagues. Test any `sport`/`league` pair with:
 
@@ -177,7 +180,7 @@ The `notificationType` field controls the outgoing payload shape:
 }
 ```
 
-The Slack payload uses Block Kit for a rich scoreboard layout: a header with a sport emoji (🏒🏈⚾🏀⚽) and league name, one section per team showing the score, abbreviation, team name, and logo image, and a context block announcing the winner or draw. A plain-text `text` field is always included as a fallback for clients that don't render blocks.
+The Slack payload uses Block Kit for a rich scoreboard layout: a header with a sport emoji (🏒🏈⚾🏀⚽🏉) and league name, one section per team showing the score, abbreviation, team name, and logo image, and a context block announcing the winner or draw. A plain-text `text` field is always included as a fallback for clients that don't render blocks.
 
 **Discord:**
 

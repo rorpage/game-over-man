@@ -9,10 +9,11 @@ Game Over Man is a one-shot Go binary for home servers. It queries ESPN or Hocke
 ## Repository layout
 
 ```
-main.go          -- entry point; orchestrates config, fetch (ESPN or HockeyTech), notify, state
+main.go          -- entry point; orchestrates config, fetch (ESPN, HockeyTech, or Springboks), notify, state
 config.go        -- config types, loading from JSON + env var overrides
 espn.go          -- ESPN API fetch, response parsing, team matching
 hockeytech.go    -- HockeyTech API fetch and response parsing (PWHL, ECHL, and others)
+springboks.go    -- springboks.rugby results scraper (JSON-LD embedded in HTML, no JSON API)
 notifier.go      -- builds notification payload (webhook/slack/discord/template), POSTs to webhook URL
 state.go         -- reads/writes/prunes the state file
 
@@ -71,7 +72,7 @@ deploy/
 
 ## Provider selection
 
-The API provider is selected automatically based on league name. `isHockeytechLeague` in `hockeytech.go` checks the `hockeytechLeagues` registry. If the league is not in that registry, ESPN is used. No config field is needed.
+The API provider is selected automatically based on league name. `isHockeytechLeague` in `hockeytech.go` checks the `hockeytechLeagues` registry; `isSpringboksLeague` in `springboks.go` checks for the literal league value `springboks`. If neither matches, ESPN is used. No config field is needed.
 
 ## ESPN API
 
@@ -97,6 +98,22 @@ Known leagues (in `hockeytechLeagues` map in `hockeytech.go`):
 | ECHL | `echl` | `echl` | `2c2b89ea7345cae8` |
 
 To add more HockeyTech leagues, add an entry to `hockeytechLeagues` in `hockeytech.go`. The key and client_code for any HockeyTech-powered league are embedded in that league's official website/app JavaScript.
+
+## Springboks (SA Rugby) API
+
+`league` value: `springboks`. `sport` value: conventionally `rugby`, but the value is only echoed back into `gameResult.Sport` -- it isn't used to build a URL, unlike ESPN/HockeyTech.
+
+There is no JSON API. `fetchSpringboksResults` in `springboks.go` GETs `https://springboks.rugby/match-centre/results` (an HTML page) and extracts a schema.org `ItemList` of `SportsEvent` embedded as JSON-LD in a `<script type="application/ld+json">` tag, via `ldJSONPattern` (a regexp, not an HTML parser -- there's no other embedded structure to worry about on this page).
+
+Consequences of scraping rather than calling a dedicated API:
+
+- No status field and no unique game ID exist in the data. A game is considered completed when both `homeTeamScore` and `awayTeamScore` are present; unplayed fixtures appear in the same list without them. `StatusDescription` is hardcoded to `"Full Time"` for every result.
+- `springboksGameID` derives an ID from kickoff time + team names since the feed provides none.
+- `competitor[0]`/`competitor[1]` are home/away, in the same order as `homeTeamScore`/`awayTeamScore` and consistent with the `"Home v Away"` `name` field -- verified against sample data, not documented anywhere by SA Rugby.
+- No abbreviation field exists, so `competitor.Abbreviation` is set to the uppercased full team name (e.g. `SPRINGBOKS`, `DHL STORMERS`). Config entries for this league should set `abbreviation` to the exact team name as shown on the site.
+- No postseason indicator exists, so `IsPostseason` is always `false` and `postseasonOnly` config entries for this league never match.
+- The feed covers all SA Rugby-affiliated fixtures (Springboks, provincial franchises, age-group and women's sides, and some foreign fixtures from shared tournaments), not just the Springboks -- `"*"` matches all of them.
+- Being a scrape rather than an API, a springboks.rugby redesign could silently break this (wrong JSON-LD shape, or the block disappearing). There's no fallback if that happens; `fetchSpringboksResults` just returns an error.
 
 ## Adding a new ESPN league
 
