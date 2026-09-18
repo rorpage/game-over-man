@@ -119,11 +119,11 @@ See `config.example.json` for a more complete example with all supported fields.
 | Soccer | Ligue 1 | `soccer` | `fra.1` | ESPN |
 | Soccer | Champions League | `soccer` | `uefa.champions` | ESPN |
 | Soccer | FIFA World Cup | `soccer` | `fifa.world` | ESPN |
-| Rugby | Springboks / SA Rugby | `rugby` | `springboks` | springboks.rugby |
+| Rugby | Springboks / SA Rugby | `rugby` | `springboks` | springboks.rugby (unofficial) |
 
 The correct API is selected automatically based on the `league` value -- no extra config needed.
 
-The `springboks` league is a special case: springboks.rugby has no JSON API, so results are scraped from a schema.org JSON-LD block embedded in the results page HTML. It covers all SA Rugby-affiliated fixtures (Springboks, franchises, provincial and age-group sides, women's teams), not just test matches, so use a specific team name rather than `"*"` unless you want every one of those notified.
+The `springboks` league uses an undocumented API behind springboks.rugby's own match centre (no official public API exists, so it's unofficial and could change without notice). It covers all SA Rugby-affiliated fixtures (Springboks, franchises, provincial and age-group sides, women's teams), not just test matches, so use a specific team name rather than `"*"` unless you want every one of those notified.
 
 The ESPN API may support additional leagues. Test any `sport`/`league` pair with:
 

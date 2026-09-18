@@ -103,19 +103,17 @@ To add more HockeyTech leagues, add an entry to `hockeytechLeagues` in `hockeyte
 
 `league` value: `springboks`. `sport` value: conventionally `rugby`, but the value is only echoed back into `gameResult.Sport` -- it isn't used to build a URL, unlike ESPN/HockeyTech.
 
-There is no JSON API. `fetchSpringboksResults` in `springboks.go` GETs `https://springboks.rugby/match-centre/results` (an HTML page) and extracts a schema.org `ItemList` of `SportsEvent` embedded as JSON-LD in a `<script type="application/ld+json">` tag, via `ldJSONPattern` (a regexp, not an HTML parser -- there's no other embedded structure to worry about on this page).
+Base URL: `https://springboks.rugby/api/match-centre/matches`. This is an undocumented API discovered via the site's network requests (there is no public API documentation), so treat it as unofficial and liable to change without notice.
 
-The page header embeds multiple JSON-LD blocks (breadcrumb navigation is also typically an `ItemList`, plus an `Organization` block), so `extractResultsList` cannot just take the first block that parses with a non-empty `itemListElement` -- a breadcrumb list would match that and silently produce zero results. It checks each item's `@type` and only accepts a block whose entries are `SportsEvent`.
+Key query parameters: `startDate`, `endDate` (a datetime; the date-only form also works), `pageIndex=0`, `pageSize`, `IsAscending=true`. `teamOneId` filters to a single team by GUID but is omitted deliberately -- leaving it off returns matches across every SA Rugby-affiliated team and competition, which `fetchSpringboksResults` fetches once and filters client-side the same way ESPN/HockeyTech do. `fetchSpringboksResults` queries a rolling window of yesterday through the end of today (UTC), mirroring HockeyTech's 1-day lookback, and requests `pageSize=100` without handling pagination -- an assumption that the 2-day window across all competitions stays under 100 matches; revisit if `totalDataCount` in the response ever exceeds that.
 
-Consequences of scraping rather than calling a dedicated API:
+Response shape: `items[]`, each with `matchId` (a GUID, used directly as the game ID), `utcDate` (no trailing `Z` despite the name -- one is appended for a valid RFC3339 string), `statsStatus` (`"Complete"` is the only value treated as finished), and `teams[]` with `isHomeTeam`, `score`, `name`, and `imagePath` (a logo URL, unlike the old scrape which had none).
 
-- No status field and no unique game ID exist in the data. A game is considered completed when both `homeTeamScore` and `awayTeamScore` are present; unplayed fixtures appear in the same list without them. `StatusDescription` is hardcoded to `"Full Time"` for every result.
-- `springboksGameID` derives an ID from kickoff time + team names since the feed provides none.
-- `competitor[0]`/`competitor[1]` are home/away, in the same order as `homeTeamScore`/`awayTeamScore` and consistent with the `"Home v Away"` `name` field -- verified against sample data, not documented anywhere by SA Rugby.
-- No abbreviation field exists, so `competitor.Abbreviation` is set to the uppercased full team name (e.g. `SPRINGBOKS`, `DHL STORMERS`). Config entries for this league should set `abbreviation` to the exact team name as shown on the site.
-- No postseason indicator exists, so `IsPostseason` is always `false` and `postseasonOnly` config entries for this league never match.
-- The feed covers all SA Rugby-affiliated fixtures (Springboks, provincial franchises, age-group and women's sides, and some foreign fixtures from shared tournaments), not just the Springboks -- `"*"` matches all of them.
-- Being a scrape rather than an API, a springboks.rugby redesign could silently break this (wrong JSON-LD shape, or the block disappearing). There's no fallback if that happens; `fetchSpringboksResults` just returns an error.
+Consequences of no abbreviation or postseason field in this API:
+
+- No abbreviation field exists, so `competitor.Abbreviation` is set to the uppercased full team name (e.g. `SPRINGBOKS`, `DHL STORMERS`). Config entries for this league should set `abbreviation` to the exact team name as returned by the API. `StatusDescription` is hardcoded to `"Full Time"` since the API doesn't distinguish extra time/shootouts.
+- No postseason indicator exists (the closest field, `roundName`, is free text like `"4th Test"` with no reliable playoff signal), so `IsPostseason` is always `false` and `postseasonOnly` config entries for this league never match.
+- The feed covers all SA Rugby-affiliated matches (Springboks, provincial franchises, age-group and women's sides, and some foreign fixtures from shared tournaments), not just the Springboks -- `"*"` matches all of them.
 
 ## Adding a new ESPN league
 
