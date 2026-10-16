@@ -84,6 +84,8 @@ See `config.example.json` for a more complete example with all supported fields.
 | `notificationTemplate` | If `template` | -- | Go template string used when `notificationType` is `template` |
 | `stateFilePath` | No | `~/.config/game-over-man/state.json` | Where to persist notification state |
 | `pruneAfterDays` | No | `30` | How many days to keep state entries before pruning |
+| `seqUrl` | No | -- | Base URL of a Seq server (e.g. `http://seq-host:5341`). Logging to Seq is off when not set. |
+| `seqApiKey` | No | -- | Seq API key, sent as the `X-Seq-ApiKey` header |
 
 **Notification URL:** Set via the `NOTIFICATION_URL` environment variable (preferred, keeps it out of the config file) or as `notificationUrl` in the config. The env var takes precedence.
 
@@ -94,6 +96,16 @@ See `config.example.json` for a more complete example with all supported fields.
 | `NOTIFICATION_URL` | Webhook URL (overrides `notificationUrl` in config) |
 | `CONFIG_FILE` | Path to config file (default: `~/.config/game-over-man/config.json`) |
 | `STATE_FILE` | Path to state file (default: `~/.config/game-over-man/state.json`) |
+| `SEQ_URL` | Seq server base URL (overrides `seqUrl` in config) |
+| `SEQ_API_KEY` | Seq API key (overrides `seqApiKey` in config) |
+
+## Logging to Seq
+
+Set `SEQ_URL` (and `SEQ_API_KEY` if your Seq server requires one) to send every log line to [Seq](https://datalust.co/seq) in addition to stderr. Events are buffered during the run and sent in one request to `/api/events/raw?clef` when the run ends. Each event has a level (`Information` or `Error`) and the properties `Application`, `Version`, `RunId` (one per run), and `Module` (the `[espn]`-style prefix).
+
+If Seq cannot be reached or rejects the request, a `[seq] could not send logs` warning is printed to stderr and the run continues normally. A Seq problem never changes the exit code.
+
+Use the env vars rather than the config fields if you want config load errors sent to Seq, since those happen before the config file is read.
 
 ## Supported Leagues
 

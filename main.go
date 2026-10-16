@@ -17,12 +17,18 @@ func main() {
 		return
 	}
 
-	fmt.Printf("=== Game Over Man %s ===\n", version)
+	seq := newSeqSink()
+	seq.install()
+
+	log.Printf("=== Game Over Man %s ===", version)
 
 	cfg, err := loadConfig()
 	if err != nil {
-		log.Fatalf("[config] %v", err)
+		errLog.Printf("[config] %v", err)
+		seq.flush()
+		os.Exit(1)
 	}
+	seq.url, seq.apiKey = cfg.SeqURL, cfg.SeqAPIKey
 	log.Printf("[config] tracking %d team(s)", len(cfg.Teams))
 
 	state := loadState(cfg.StateFilePath)
@@ -44,7 +50,7 @@ func main() {
 			log.Printf("[hockeytech] fetching %s...", t.League)
 			games, err = fetchHockeytechScoreboard(t.Sport, t.League)
 			if err != nil {
-				log.Printf("[hockeytech] %v", err)
+				errLog.Printf("[hockeytech] %v", err)
 				continue
 			}
 			log.Printf("[hockeytech] %d completed game(s)", len(games))
@@ -52,7 +58,7 @@ func main() {
 			log.Printf("[springboks] fetching results...")
 			games, err = fetchSpringboksResults(t.Sport, t.League)
 			if err != nil {
-				log.Printf("[springboks] %v", err)
+				errLog.Printf("[springboks] %v", err)
 				continue
 			}
 			log.Printf("[springboks] %d completed game(s)", len(games))
@@ -60,7 +66,7 @@ func main() {
 			log.Printf("[espn] fetching %s...", key)
 			games, err = fetchScoreboard(t.Sport, t.League)
 			if err != nil {
-				log.Printf("[espn] %v", err)
+				errLog.Printf("[espn] %v", err)
 				continue
 			}
 			log.Printf("[espn] %d completed game(s)", len(games))
@@ -75,7 +81,7 @@ func main() {
 				continue
 			}
 			if err := sendNotification(cfg, game); err != nil {
-				log.Printf("[notify] %v", err)
+				errLog.Printf("[notify] %v", err)
 				continue
 			}
 			markNotified(&state, game.ID)
@@ -84,9 +90,11 @@ func main() {
 	}
 
 	if err := saveState(cfg.StateFilePath, state); err != nil {
-		log.Printf("[state] failed to save: %v", err)
+		errLog.Printf("[state] failed to save: %v", err)
+		seq.flush()
 		os.Exit(1)
 	}
 
-	fmt.Printf("=== Done. %d new notification(s) sent. ===\n", notified)
+	log.Printf("=== Done. %d new notification(s) sent. ===", notified)
+	seq.flush()
 }

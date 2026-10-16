@@ -16,6 +16,8 @@ hockeytech.go    -- HockeyTech API fetch and response parsing (PWHL, ECHL, and o
 springboks.go    -- springboks.rugby results scraper (JSON-LD embedded in HTML, no JSON API)
 notifier.go      -- builds notification payload (webhook/slack/discord/template), POSTs to webhook URL
 state.go         -- reads/writes/prunes the state file
+seq.go           -- optional Seq log shipping (buffers CLEF events, sends one request at exit)
+seq_test.go      -- test for seq.go (go test ./...)
 dev/main.go      -- local test runner (go run ./dev); not part of release builds
 
 go.mod                -- module definition; no external dependencies
@@ -41,6 +43,7 @@ deploy/
 - **Config-file-first, env-var override.** `NOTIFICATION_URL`, `CONFIG_FILE`, and `STATE_FILE` env vars override their config file equivalents. Keep the notification URL in an env var to avoid committing secrets.
 - **Case-normalized inputs.** Sport and league values are lowercased; abbreviations are uppercased on config load so comparisons are always case-insensitive.
 - **Notification type presets.** `notificationType` controls the outgoing payload shape: `webhook` (default, full JSON), `slack` (`{"text": "..."}`), `discord` (`{"content": "..."}`), or `template` (arbitrary Go `text/template` string rendered against the full payload). This lets you target common platforms without an intermediary.
+- **Optional Seq logging.** When `SEQ_URL` / `seqUrl` is set, `seq.go` tees the standard logger and `errLog` into an in-memory buffer of CLEF events (`Information` and `Error` levels respectively) and POSTs them to Seq once at the end of the run. Every exit path must call `seq.flush()` before `os.Exit`, so do not use `log.Fatal`. Seq failures only print a warning to stderr and never change the exit code.
 - **Wildcard and postseason-only entries.** Setting `abbreviation` to `"*"` matches every team in that sport/league. Setting `postseasonOnly: true` suppresses notifications for regular-season games. Combine them to follow playoffs league-wide without knowing the teams in advance. Postseason detection uses the top-level `season.type` field from the ESPN scoreboard response (3 = postseason).
 
 ## Config fields
@@ -59,6 +62,8 @@ deploy/
 | `notificationTemplate` | If `template` | -- | Go template string used when `notificationType` is `template` |
 | `stateFilePath` | No | `/var/lib/game-over-man/state.json` | Where to persist notification state |
 | `pruneAfterDays` | No | `30` | How many days to keep state entries before pruning |
+| `seqUrl` | No | -- | Seq server base URL; overridden by `SEQ_URL` |
+| `seqApiKey` | No | -- | Seq API key; overridden by `SEQ_API_KEY` |
 
 ## Default file paths
 
@@ -156,11 +161,12 @@ type notificationPayload struct {
 ```bash
 go build ./...              # compile
 go vet ./...                # static analysis
+go test ./...               # tests (currently only seq_test.go)
 go run ./dev                # run against a local webhook listener
 go run ./dev -fresh         # same, but delete state.json first
 ```
 
-There is no automated test suite. `dev/main.go` is a separate `main` package for local testing only; release builds use `go build .`, so it is never included in a release. It creates a default `config.json` if missing, starts a listener on a free port that prints each POST body, and runs `go run .` with `CONFIG_FILE=config.json`, `STATE_FILE=state.json` (both gitignored), and `NOTIFICATION_URL` pointing at the listener.
+The only automated test is `seq_test.go`, run in CI. `dev/main.go` is a separate `main` package for local testing only; release builds use `go build .`, so it is never included in a release. It creates a default `config.json` if missing, starts a listener on a free port that prints each POST body, and runs `go run .` with `CONFIG_FILE=config.json`, `STATE_FILE=state.json` (both gitignored), and `NOTIFICATION_URL` pointing at the listener.
 
 ## Versioning
 
@@ -187,6 +193,7 @@ Push back when a suggestion would make the code worse -- don't just agree. If th
 - Standard Go idioms; run `go vet` before committing
 - No external dependencies -- standard library only
 - Log lines are prefixed with `[module]` (e.g. `[espn]`, `[notify]`, `[state]`, `[config]`)
+- Use `log.Printf` for normal output and `errLog.Printf` for failures, so Seq gets the right level. Do not use `fmt.Print*` for log output, since it bypasses Seq.
 - Do not write comments that explain what the code does -- only add one when the WHY is non-obvious
 - No em dashes anywhere in code or documentation
 

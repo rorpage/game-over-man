@@ -21,6 +21,9 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+      - name: Test
+        run: go test ./...
+
       - name: Build binaries
         env:
           VERSION: pr-${{ github.event.pull_request.number }}
