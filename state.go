@@ -22,13 +22,13 @@ func loadState(path string) appState {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			log.Printf("[state] could not read %s, starting fresh: %v", path, err)
+			errLog.Printf("[state] could not read %s, starting fresh: %v", path, err)
 		}
 		return appState{}
 	}
 	var s appState
 	if err := json.Unmarshal(data, &s); err != nil {
-		log.Printf("[state] could not parse %s, starting fresh: %v", path, err)
+		errLog.Printf("[state] could not parse %s, starting fresh: %v", path, err)
 		return appState{}
 	}
 	return s

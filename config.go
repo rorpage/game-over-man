@@ -34,6 +34,8 @@ type appConfig struct {
 	NotificationTemplate string            `json:"notificationTemplate"`
 	StateFilePath        string            `json:"stateFilePath"`
 	PruneAfterDays       int               `json:"pruneAfterDays"`
+	SeqURL               string            `json:"seqUrl"`
+	SeqAPIKey            string            `json:"seqApiKey"`
 }
 
 func loadConfig() (*appConfig, error) {
@@ -64,6 +66,13 @@ func loadConfig() (*appConfig, error) {
 	}
 	if cfg.StateFilePath == "" {
 		cfg.StateFilePath = filepath.Join(userAppDir(), "state.json")
+	}
+
+	if v := os.Getenv("SEQ_URL"); v != "" {
+		cfg.SeqURL = v
+	}
+	if v := os.Getenv("SEQ_API_KEY"); v != "" {
+		cfg.SeqAPIKey = v
 	}
 
 	if cfg.PruneAfterDays <= 0 {

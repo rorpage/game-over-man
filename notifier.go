@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"text/template"
@@ -186,6 +187,6 @@ func sendNotification(cfg *appConfig, game gameResult) error {
 		return fmt.Errorf("%s %s: HTTP %d", cfg.NotificationMethod, cfg.NotificationURL, resp.StatusCode)
 	}
 
-	fmt.Printf("[notify] %s\n", payload.Summary)
+	log.Printf("[notify] %s", payload.Summary)
 	return nil
 }
