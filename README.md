@@ -38,7 +38,7 @@ chmod +x /usr/local/bin/game-over-man
 
 ### Build from source
 
-Requires Go 1.22+.
+Requires the Go version listed in `go.mod`.
 
 ```bash
 git clone https://github.com/rorpage/game-over-man.git
@@ -302,7 +302,7 @@ The state file is the single source of truth for idempotency. As long as it pers
 
 ## Building and testing locally
 
-Requires Go 1.22+. There is no automated test suite; testing means running the app against a local webhook listener. A developer script in `dev/` does all of it in one command. Run it from the repo root on any OS:
+Requires the Go version listed in `go.mod`. There is no automated test suite; testing means running the app against a local webhook listener. A developer script in `dev/` does all of it in one command. Run it from the repo root on any OS:
 
 ```bash
 go vet ./...         # static analysis
