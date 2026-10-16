@@ -9,7 +9,8 @@
     { "sport": "football",   "league": "college-football",             "abbreviation": "IND" },
     { "sport": "basketball", "league": "mens-college-basketball",      "abbreviation": "IND" },
     { "sport": "hockey",     "league": "pwhl",                         "abbreviation": "*" },
-    { "sport": "hockey",     "league": "echl",                         "abbreviation": "CIN" }
+    { "sport": "hockey",     "league": "echl",                         "abbreviation": "CIN" },
+    { "sport": "rugby",      "league": "springboks",                   "abbreviation": "Springboks" }
   ],
 
   "notificationUrl": "https://ntfy.sh/my-sports-alerts",

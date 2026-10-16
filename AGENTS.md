@@ -9,12 +9,14 @@ Game Over Man is a one-shot Go binary for home servers. It queries ESPN or Hocke
 ## Repository layout
 
 ```
-main.go          -- entry point; orchestrates config, fetch (ESPN or HockeyTech), notify, state
+main.go          -- entry point; orchestrates config, fetch (ESPN, HockeyTech, or Springboks), notify, state
 config.go        -- config types, loading from JSON + env var overrides
 espn.go          -- ESPN API fetch, response parsing, team matching
 hockeytech.go    -- HockeyTech API fetch and response parsing (PWHL, ECHL, and others)
+springboks.go    -- springboks.rugby results scraper (JSON-LD embedded in HTML, no JSON API)
 notifier.go      -- builds notification payload (webhook/slack/discord/template), POSTs to webhook URL
 state.go         -- reads/writes/prunes the state file
+dev/main.go      -- local test runner (go run ./dev); not part of release builds
 
 go.mod                -- module definition; no external dependencies
 config.example.json   -- copy to config.json (gitignored) to run locally
@@ -71,7 +73,7 @@ deploy/
 
 ## Provider selection
 
-The API provider is selected automatically based on league name. `isHockeytechLeague` in `hockeytech.go` checks the `hockeytechLeagues` registry. If the league is not in that registry, ESPN is used. No config field is needed.
+The API provider is selected automatically based on league name. `isHockeytechLeague` in `hockeytech.go` checks the `hockeytechLeagues` registry; `isSpringboksLeague` in `springboks.go` checks for the literal league value `springboks`. If neither matches, ESPN is used. No config field is needed.
 
 ## ESPN API
 
@@ -97,6 +99,22 @@ Known leagues (in `hockeytechLeagues` map in `hockeytech.go`):
 | ECHL | `echl` | `echl` | `2c2b89ea7345cae8` |
 
 To add more HockeyTech leagues, add an entry to `hockeytechLeagues` in `hockeytech.go`. The key and client_code for any HockeyTech-powered league are embedded in that league's official website/app JavaScript.
+
+## Springboks (SA Rugby) API
+
+`league` value: `springboks`. `sport` value: conventionally `rugby`, but the value is only echoed back into `gameResult.Sport` -- it isn't used to build a URL, unlike ESPN/HockeyTech.
+
+Base URL: `https://springboks.rugby/api/match-centre/matches`. This is an undocumented API discovered via the site's network requests (there is no public API documentation), so treat it as unofficial and liable to change without notice.
+
+Key query parameters: `startDate`, `endDate` (a datetime; the date-only form also works), `pageIndex=0`, `pageSize`, `IsAscending=true`. `teamOneId` filters to a single team by GUID but is omitted deliberately -- leaving it off returns matches across every SA Rugby-affiliated team and competition, which `fetchSpringboksResults` fetches once and filters client-side the same way ESPN/HockeyTech do. `fetchSpringboksResults` queries a rolling window of yesterday through the end of today (UTC), mirroring HockeyTech's 1-day lookback, and requests `pageSize=100` without handling pagination -- an assumption that the 2-day window across all competitions stays under 100 matches; revisit if `totalDataCount` in the response ever exceeds that.
+
+Response shape: `items[]`, each with `matchId` (a GUID, used directly as the game ID), `utcDate` (no trailing `Z` despite the name -- one is appended for a valid RFC3339 string), `statsStatus` (`"Complete"` is the only value treated as finished), and `teams[]` with `isHomeTeam`, `score`, `name`, and `imagePath` (a logo URL, unlike the old scrape which had none).
+
+Consequences of no abbreviation or postseason field in this API:
+
+- No abbreviation field exists, so `competitor.Abbreviation` is set to the uppercased full team name (e.g. `SPRINGBOKS`, `DHL STORMERS`). Config entries for this league should set `abbreviation` to the exact team name as returned by the API. `StatusDescription` is hardcoded to `"Full Time"` since the API doesn't distinguish extra time/shootouts.
+- No postseason indicator exists (the closest field, `roundName`, is free text like `"4th Test"` with no reliable playoff signal), so `IsPostseason` is always `false` and `postseasonOnly` config entries for this league never match.
+- The feed covers all SA Rugby-affiliated matches (Springboks, provincial franchises, age-group and women's sides, and some foreign fixtures from shared tournaments), not just the Springboks -- `"*"` matches all of them.
 
 ## Adding a new ESPN league
 
@@ -138,14 +156,11 @@ type notificationPayload struct {
 ```bash
 go build ./...              # compile
 go vet ./...                # static analysis
-go build -o game-over-man . && CONFIG_FILE=config.json NOTIFICATION_URL=http://localhost:3001 ./game-over-man
+go run ./dev                # run against a local webhook listener
+go run ./dev -fresh         # same, but delete state.json first
 ```
 
-To test locally without a real webhook, run a listener in another terminal:
-
-```bash
-python3 -m http.server 3001
-```
+There is no automated test suite. `dev/main.go` is a separate `main` package for local testing only; release builds use `go build .`, so it is never included in a release. It creates a default `config.json` if missing, starts a listener on a free port that prints each POST body, and runs `go run .` with `CONFIG_FILE=config.json`, `STATE_FILE=state.json` (both gitignored), and `NOTIFICATION_URL` pointing at the listener.
 
 ## Versioning
 

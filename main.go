@@ -48,6 +48,14 @@ func main() {
 				continue
 			}
 			log.Printf("[hockeytech] %d completed game(s)", len(games))
+		} else if isSpringboksLeague(t.League) {
+			log.Printf("[springboks] fetching results...")
+			games, err = fetchSpringboksResults(t.Sport, t.League)
+			if err != nil {
+				log.Printf("[springboks] %v", err)
+				continue
+			}
+			log.Printf("[springboks] %d completed game(s)", len(games))
 		} else {
 			log.Printf("[espn] fetching %s...", key)
 			games, err = fetchScoreboard(t.Sport, t.League)

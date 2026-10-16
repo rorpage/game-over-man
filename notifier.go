@@ -67,6 +67,8 @@ func sportEmoji(sport, league string) string {
 		return "🏀"
 	case "mls":
 		return "⚽"
+	case "springboks":
+		return "🏉"
 	}
 	switch strings.ToLower(sport) {
 	case "hockey":
@@ -79,6 +81,8 @@ func sportEmoji(sport, league string) string {
 		return "🏀"
 	case "soccer":
 		return "⚽"
+	case "rugby":
+		return "🏉"
 	}
 	return "🏅"
 }

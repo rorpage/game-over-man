@@ -6,7 +6,7 @@ It is a single Go binary with no runtime dependencies. Drop it on any Linux or m
 
 ## Features
 
-- Tracks teams across NFL, NHL, NBA, MLB, AHL, PWHL, ECHL, MLS, college football, college basketball, and more
+- Tracks teams across NFL, NHL, NBA, MLB, AHL, PWHL, ECHL, MLS, college football, college basketball, the Springboks/SA Rugby, and more
 - Follow an entire league during the playoffs with a wildcard `"*"` abbreviation and `postseasonOnly: true`
 - One notification per completed game -- no duplicates, even across restarts
 - Built-in Slack and Discord payload presets; custom Go template support for any other platform
@@ -75,8 +75,8 @@ See `config.example.json` for a more complete example with all supported fields.
 | `teams` | Yes | -- | Array of teams to track |
 | `teams[].sport` | Yes | -- | Sport category (e.g. `hockey`, `football`) |
 | `teams[].league` | Yes | -- | League identifier (e.g. `nhl`, `nfl`) |
-| `teams[].abbreviation` | Yes | -- | Team abbreviation as used by the data provider (e.g. `CHI`, `IND`), or `"*"` to match every team in the league. Use `"*"` first to discover abbreviations from notification payloads if unsure. |
-| `teams[].postseasonOnly` | No | `false` | When `true`, skip games that are not part of the postseason/playoffs |
+| `teams[].abbreviation` | Yes | -- | Team abbreviation as used by the data provider (e.g. `CHI`, `IND`), or `"*"` to match every team in the league. Use `"*"` first to discover abbreviations from notification payloads if unsure. For the `springboks` league (no abbreviations available), use the exact team name as it appears on springboks.rugby instead (e.g. `Springboks`, `DHL Stormers`) -- matching is case-insensitive. |
+| `teams[].postseasonOnly` | No | `false` | When `true`, skip games that are not part of the postseason/playoffs. Not supported for the `springboks` league -- its results feed has no postseason indicator, so `postseasonOnly` entries never match. |
 | `notificationUrl` | See note | -- | Webhook URL to POST alerts to |
 | `notificationMethod` | No | `POST` | HTTP method for notifications |
 | `notificationHeaders` | No | -- | Extra headers (e.g. `{"Authorization": "Bearer ..."}`) |
@@ -119,8 +119,11 @@ See `config.example.json` for a more complete example with all supported fields.
 | Soccer | Ligue 1 | `soccer` | `fra.1` | ESPN |
 | Soccer | Champions League | `soccer` | `uefa.champions` | ESPN |
 | Soccer | FIFA World Cup | `soccer` | `fifa.world` | ESPN |
+| Rugby | Springboks / SA Rugby | `rugby` | `springboks` | springboks.rugby (unofficial) |
 
 The correct API is selected automatically based on the `league` value -- no extra config needed.
+
+The `springboks` league uses an undocumented API behind springboks.rugby's own match centre (no official public API exists, so it's unofficial and could change without notice). It covers all SA Rugby-affiliated fixtures (Springboks, franchises, provincial and age-group sides, women's teams), not just test matches, so use a specific team name rather than `"*"` unless you want every one of those notified.
 
 The ESPN API may support additional leagues. Test any `sport`/`league` pair with:
 
@@ -165,7 +168,7 @@ The `notificationType` field controls the outgoing payload shape:
 |---|---|
 | `webhook` (default) | Full JSON object (see [Notification Payload](#notification-payload)) |
 | `slack` | Slack [Block Kit](https://api.slack.com/block-kit) message with team logos, scores, and a result banner |
-| `discord` | `{"content": "<summary>"}` — ready for a Discord webhook URL |
+| `discord` | `{"content": "<summary>"}`, ready for a Discord webhook URL |
 | `template` | Output of your Go template, rendered against the payload data |
 
 **Slack:**
@@ -177,7 +180,7 @@ The `notificationType` field controls the outgoing payload shape:
 }
 ```
 
-The Slack payload uses Block Kit for a rich scoreboard layout: a header with a sport emoji (🏒🏈⚾🏀⚽) and league name, one section per team showing the score, abbreviation, team name, and logo image, and a context block announcing the winner or draw. A plain-text `text` field is always included as a fallback for clients that don't render blocks.
+The Slack payload uses Block Kit for a rich scoreboard layout: a header with a sport emoji (🏒🏈⚾🏀⚽🏉) and league name, one section per team showing the score, abbreviation, team name, and logo image, and a context block announcing the winner or draw. A plain-text `text` field is always included as a fallback for clients that don't render blocks.
 
 **Discord:**
 
@@ -206,7 +209,7 @@ Set `notificationType` to `"template"` and provide a `notificationTemplate` stri
 | `{{.Game.StatusDescription}}` | Status string (e.g. `Final`, `Final/OT`) |
 | `{{.Game.IsPostseason}}` | `true` if the game is part of the postseason/playoffs |
 
-Example — ntfy.sh with a plain-text title:
+Example: ntfy.sh with a plain-text title:
 
 ```json
 {
@@ -296,6 +299,25 @@ Logs go to syslog (`journalctl -t game-over-man` or `/var/log/syslog`).
 6. Save state to disk
 
 The state file is the single source of truth for idempotency. As long as it persists across runs, no game will ever trigger more than one notification.
+
+## Building and testing locally
+
+Requires Go 1.22+. There is no automated test suite; testing means running the app against a local webhook listener. A developer script in `dev/` does all of it in one command. Run it from the repo root on any OS:
+
+```bash
+go vet ./...         # static analysis
+go run ./dev         # run the app against a local listener
+go run ./dev -fresh  # same, but delete state.json first so notifications are sent again
+```
+
+The script:
+
+1. Creates `config.json` in the repo root if it does not exist (it is gitignored). The default config uses the `"*"` abbreviation for `nhl` and `springboks`, so you get notifications without waiting for a specific team to play. Edit it to test other leagues, or add `notificationType` (and `notificationTemplate`) to check the Slack, Discord, or template payloads.
+2. Starts a webhook listener on a free local port. It prints each notification body as formatted JSON.
+3. Runs the app from source with `CONFIG_FILE=config.json`, `STATE_FILE=state.json`, and `NOTIFICATION_URL` set to the listener. Your real config and state are not touched.
+4. Prints how many notifications were received, then exits.
+
+Run it a second time without `-fresh`: it should receive 0 notifications, because the game IDs are now in `state.json`. There are no external dependencies, so switching branches needs no extra install step.
 
 ## Versioning
 
