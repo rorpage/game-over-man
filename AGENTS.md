@@ -16,6 +16,7 @@ hockeytech.go    -- HockeyTech API fetch and response parsing (PWHL, ECHL, and o
 springboks.go    -- springboks.rugby results scraper (JSON-LD embedded in HTML, no JSON API)
 notifier.go      -- builds notification payload (webhook/slack/discord/template), POSTs to webhook URL
 state.go         -- reads/writes/prunes the state file
+dev/main.go      -- local test runner (go run ./dev); not part of release builds
 
 go.mod                -- module definition; no external dependencies
 config.example.json   -- copy to config.json (gitignored) to run locally
@@ -155,14 +156,11 @@ type notificationPayload struct {
 ```bash
 go build ./...              # compile
 go vet ./...                # static analysis
-go build -o game-over-man . && CONFIG_FILE=config.json NOTIFICATION_URL=http://localhost:3001 ./game-over-man
+go run ./dev                # run against a local webhook listener
+go run ./dev -fresh         # same, but delete state.json first
 ```
 
-To test locally without a real webhook, run a listener in another terminal:
-
-```bash
-python3 -m http.server 3001
-```
+There is no automated test suite. `dev/main.go` is a separate `main` package for local testing only; release builds use `go build .`, so it is never included in a release. It creates a default `config.json` if missing, starts a listener on a free port that prints each POST body, and runs `go run .` with `CONFIG_FILE=config.json`, `STATE_FILE=state.json` (both gitignored), and `NOTIFICATION_URL` pointing at the listener.
 
 ## Versioning
 

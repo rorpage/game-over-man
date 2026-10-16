@@ -168,7 +168,7 @@ The `notificationType` field controls the outgoing payload shape:
 |---|---|
 | `webhook` (default) | Full JSON object (see [Notification Payload](#notification-payload)) |
 | `slack` | Slack [Block Kit](https://api.slack.com/block-kit) message with team logos, scores, and a result banner |
-| `discord` | `{"content": "<summary>"}` — ready for a Discord webhook URL |
+| `discord` | `{"content": "<summary>"}`, ready for a Discord webhook URL |
 | `template` | Output of your Go template, rendered against the payload data |
 
 **Slack:**
@@ -209,7 +209,7 @@ Set `notificationType` to `"template"` and provide a `notificationTemplate` stri
 | `{{.Game.StatusDescription}}` | Status string (e.g. `Final`, `Final/OT`) |
 | `{{.Game.IsPostseason}}` | `true` if the game is part of the postseason/playoffs |
 
-Example — ntfy.sh with a plain-text title:
+Example: ntfy.sh with a plain-text title:
 
 ```json
 {
@@ -299,6 +299,25 @@ Logs go to syslog (`journalctl -t game-over-man` or `/var/log/syslog`).
 6. Save state to disk
 
 The state file is the single source of truth for idempotency. As long as it persists across runs, no game will ever trigger more than one notification.
+
+## Building and testing locally
+
+Requires Go 1.22+. There is no automated test suite; testing means running the app against a local webhook listener. A developer script in `dev/` does all of it in one command. Run it from the repo root on any OS:
+
+```bash
+go vet ./...         # static analysis
+go run ./dev         # run the app against a local listener
+go run ./dev -fresh  # same, but delete state.json first so notifications are sent again
+```
+
+The script:
+
+1. Creates `config.json` in the repo root if it does not exist (it is gitignored). The default config uses the `"*"` abbreviation for `nhl` and `springboks`, so you get notifications without waiting for a specific team to play. Edit it to test other leagues, or add `notificationType` (and `notificationTemplate`) to check the Slack, Discord, or template payloads.
+2. Starts a webhook listener on a free local port. It prints each notification body as formatted JSON.
+3. Runs the app from source with `CONFIG_FILE=config.json`, `STATE_FILE=state.json`, and `NOTIFICATION_URL` set to the listener. Your real config and state are not touched.
+4. Prints how many notifications were received, then exits.
+
+Run it a second time without `-fresh`: it should receive 0 notifications, because the game IDs are now in `state.json`. There are no external dependencies, so switching branches needs no extra install step.
 
 ## Versioning
 
