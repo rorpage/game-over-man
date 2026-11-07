@@ -20,7 +20,7 @@ func isSpringboksLeague(league string) bool {
 
 type sbTeam struct {
 	IsHomeTeam bool   `json:"isHomeTeam"`
-	Score      int    `json:"score"`
+	Score      *int   `json:"score"` // null, not 0, for a match that hasn't been played -- must stay a pointer
 	Name       string `json:"name"`
 	ImagePath  string `json:"imagePath"`
 }
@@ -28,7 +28,9 @@ type sbTeam struct {
 type sbMatch struct {
 	MatchID     string   `json:"matchId"`
 	UTCDate     string   `json:"utcDate"`
-	StatsStatus string   `json:"statsStatus"`
+	IsLive      bool     `json:"isLive"`
+	IsCancelled bool     `json:"isCancelled"`
+	IsPostponed bool     `json:"isPostponed"`
 	Teams       []sbTeam `json:"teams"`
 }
 
@@ -67,9 +69,17 @@ func fetchSpringboksResults(sport, league string) ([]gameResult, error) {
 		return nil, fmt.Errorf("decoding %s response: %w", reqURL, err)
 	}
 
+	return parseSpringboksMatches(body, sport, league), nil
+}
+
+// statsStatus is not a reliable completion signal in this API -- it's seen
+// "Live" on a finished blowout and "None" on a finished, non-blowout match in
+// the same response. Both non-null scores plus isLive/isCancelled/isPostponed
+// all false is what actually distinguishes a finished match here.
+func parseSpringboksMatches(body sbMatchesResponse, sport, league string) []gameResult {
 	var results []gameResult
 	for _, m := range body.Items {
-		if m.StatsStatus != "Complete" {
+		if m.IsLive || m.IsCancelled || m.IsPostponed {
 			continue
 		}
 
@@ -83,6 +93,9 @@ func fetchSpringboksResults(sport, league string) ([]gameResult, error) {
 			}
 		}
 		if home == nil || away == nil {
+			continue
+		}
+		if home.Score == nil || away.Score == nil {
 			continue
 		}
 
@@ -99,19 +112,19 @@ func fetchSpringboksResults(sport, league string) ([]gameResult, error) {
 			HomeTeam: competitor{
 				Name:         home.Name,
 				Abbreviation: strings.ToUpper(home.Name),
-				Score:        home.Score,
+				Score:        *home.Score,
 				IsHome:       true,
 				LogoURL:      home.ImagePath,
 			},
 			AwayTeam: competitor{
 				Name:         away.Name,
 				Abbreviation: strings.ToUpper(away.Name),
-				Score:        away.Score,
+				Score:        *away.Score,
 				IsHome:       false,
 				LogoURL:      away.ImagePath,
 			},
 			StatusDescription: "Full Time",
 		})
 	}
-	return results, nil
+	return results
 }
