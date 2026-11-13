@@ -168,7 +168,7 @@ go run ./dev                # run against a local webhook listener
 go run ./dev -fresh         # same, but delete state.json first
 ```
 
-The only automated test is `seq_test.go`, run in CI. `dev/main.go` is a separate `main` package for local testing only; release builds use `go build .`, so it is never included in a release. It creates a default `config.json` if missing, starts a listener on a free port that prints each POST body, and runs `go run .` with `CONFIG_FILE=config.json`, `STATE_FILE=state.json` (both gitignored), and `NOTIFICATION_URL` pointing at the listener.
+The automated tests are `seq_test.go` and `springboks_test.go`, run in CI. `dev/main.go` is a separate `main` package for local testing only; release builds use `go build .`, so it is never included in a release. It creates a default `config.json` if missing, starts a listener on a free port that prints each POST body, and runs `go run .` with `CONFIG_FILE=config.json`, `STATE_FILE=state.json` (both gitignored), and `NOTIFICATION_URL` pointing at the listener.
 
 ## Versioning
 

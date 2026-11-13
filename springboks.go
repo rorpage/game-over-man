@@ -69,17 +69,28 @@ func fetchSpringboksResults(sport, league string) ([]gameResult, error) {
 		return nil, fmt.Errorf("decoding %s response: %w", reqURL, err)
 	}
 
-	return parseSpringboksMatches(body, sport, league), nil
+	return parseSpringboksMatches(body, sport, league, time.Now()), nil
 }
+
+// A rugby match cannot finish sooner than this after kickoff (80 minutes of
+// play plus halftime), so nothing earlier can be a final result.
+const springboksMinMatchDuration = 90 * time.Minute
 
 // statsStatus is not a reliable completion signal in this API -- it's seen
 // "Live" on a finished blowout and "None" on a finished, non-blowout match in
-// the same response. Both non-null scores plus isLive/isCancelled/isPostponed
-// all false is what actually distinguishes a finished match here.
-func parseSpringboksMatches(body sbMatchesResponse, sport, league string) []gameResult {
+// the same response. Scores are not reliable either: an unplayed match can
+// report score 0 (not null) for both teams. A match counts as finished only
+// when isLive/isCancelled/isPostponed are all false, both scores are non-null,
+// and kickoff was at least springboksMinMatchDuration ago.
+func parseSpringboksMatches(body sbMatchesResponse, sport, league string, now time.Time) []gameResult {
 	var results []gameResult
 	for _, m := range body.Items {
 		if m.IsLive || m.IsCancelled || m.IsPostponed {
+			continue
+		}
+
+		kickoff, err := time.Parse(time.RFC3339, strings.TrimSuffix(m.UTCDate, "Z")+"Z")
+		if err != nil || now.Before(kickoff.Add(springboksMinMatchDuration)) {
 			continue
 		}
 
